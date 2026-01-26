@@ -1,0 +1,47 @@
+DeclVersion("1.0.0");
+DeclRoot("ToyEngine")
+{
+    Configurations = [ "Development", "Preview", "Distribution" ];
+    Platforms      = [ "Windows", "Linux" ];
+    Architectures  = [ "x64", "ARM64" ];
+    Projects =
+    [
+        "Toy-Audio",
+        "Toy-Client", # Main executable
+        "Toy-Core",
+        "Toy-Render"
+    ];
+    StartModule = "Toy-Client";
+};
+# Common endoskeleton for the Engine's own modules.
+DeclModuleSchema("EngineModule")
+{
+    LanguageStandard = "C++17"; # All engine modules use C++ with the C++17 standard.
+    OutputPath = "%RootPath%/Binaries/%Configuration%-%Platform%-%Architecture%/%ModuleName%";
+    IntermediatePath = "%RootPath%/Binaries-Int/%Configuration%-%Platform%-%Architecture%/%ModuleName%";
+
+    # All modules link against the Core module, except for the Core itself obviously.
+    WhenNot("%ModuleName%", "Toy-Core")
+    {
+        # += works with array fields.
+        # It can accept a singular element or an array of which every element will be appended.
+        Linkages += "Toy-Core";
+    };
+};
+# Common endoskeleton for Clients using the Engine.
+DeclModuleSchema("EngineClient", "EngineModule")
+{
+    # Here we unassign the C++ standard, making the Client have to choose its own standard.
+    ~LanguageStandard;
+
+    # Toy-Core already comes from EngineModule parent schema, no need to include it here.
+    Linkages += [ "Toy-Audio", "Toy-Render" ];
+    DefineGlobalMacro("TOYENGINE_BUILD_CLIENT"); // Notify Engine headers of Client status.
+};
+# Advanced pattern (unimplemented as of v1.0.0)
+# Include[("Audio"), ("Client"), ("Core"), ("Render")];
+# Simpler pattern
+Include("Audio");
+Include("Client");
+Include("Core");
+Include("Render");

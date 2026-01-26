@@ -1,0 +1,44 @@
+DeclModule("HelloWorldProject")
+{
+    Language    = "C++";
+    CppStandard = "C++17";
+    
+    OutputType       = "ConsoleApplication";
+    OutputName       = "%ModuleName%";
+    OutputPath       = "%ModulePath%/Binaries/%Configuration%-%Platform%-%Architecture%";
+    IntermediatePath = "%ModulePath%/Binaries-Int/%Configuration%-%Platform%-%Architecture%";
+
+    # RootSourceDirectories captures all C/C++ headers and translation units in the given dirs and their subdirs.
+    RootSourceDirectories = [ "Source" ];
+    # Alternatively you could add to individual source array.
+    # Sources += "Source/Main.cpp";
+
+    # Change the 2nd 'No' to 'Yes' if you want a message box instead of console message for Windows.
+    When("Yes", "No")
+    {
+        When("%Platform%", "Windows")
+        {
+            # Special DefineGlobalMacro for C/C++ projects.
+            DefineGlobalMacro("HELLOWORLD_USE_WIN32_MESSAGEBOX");
+            # For Windows, WindowedApplication changes the subsystem to WINDOWS from CONSOLE so WinMain will be used.
+            OutputType = "WindowedApplication"; # Field reassignment is possible.
+        };
+    };
+
+    When("%Configuration%", "Debug")
+    {
+        RuntimeLibraries = "UseDebug";
+        GenerateDebugSymbols = "Yes";
+    };
+    When("%Configuration%", "Release")
+    {
+        RuntimeLibraries = "UseRelease";
+        # All possible OptimizationLevel values:
+        #   Off: Zero optimization, code should stay as is.
+        #   Balanced: Balanced optimization between code size and runtime performance.
+        #   Smallest: Optimize for the smallest possible code size.
+        #   Fastest: Optimize for fastest runtime performance.
+        #   Full: Optimize everything.
+        OptimizationLevel = "Smallest";
+    };
+};
