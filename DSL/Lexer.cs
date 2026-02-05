@@ -91,7 +91,7 @@ namespace Moonquake.DSL
                 $"Lexer.Lex() error: Unexpected token '{CurBeforeChk}' met on position {Index-1}. Returning new Token of IVLD type."
             );
 
-            return new Token(Cur(), TokenType.Invalid);
+            return new Token(CurBeforeChk, TokenType.Invalid);
         }
 
         private void SkipWhitespace()

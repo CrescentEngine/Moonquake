@@ -1,5 +1,6 @@
 // Copyright (C) 2026 ychgen, all rights reserved.
 
+using System.Collections.Immutable;
 using Moonquake.DSL;
 
 namespace Moonquake
@@ -18,6 +19,23 @@ namespace Moonquake
         FieldUnassignment, // ~somefield;
         Array              // [ ...comma-led-str-exprs... ]
     }
+
+    class AstTypeArrayComparer : IEqualityComparer<ImmutableArray<ASTType>>
+    {
+        public bool Equals(ImmutableArray<ASTType> x, ImmutableArray<ASTType> y)
+            => x.SequenceEqual(y);
+
+        public int GetHashCode(ImmutableArray<ASTType> obj)
+        {
+            unchecked
+            {
+                int hash = 17;
+                foreach (var t in obj)
+                    hash = hash * 31 + t.GetHashCode();
+                return hash;
+            }
+        }
+}
     
     public class AST
     {
@@ -25,6 +43,10 @@ namespace Moonquake
     }
 
     public class NoopAST : AST
+    {
+    }
+
+    public class ExpressionAST : AST
     {
     }
 
@@ -46,18 +68,18 @@ namespace Moonquake
         }
     }
 
-    public class StringAST : AST
+    public class StringAST : ExpressionAST
     {
-        public string Value = "";
-        public string Evaluated = ""; // Filled by Visitor
+        public string Literal  = "";
+        public string Resolved = ""; // Filled by Visitor.
 
         public StringAST()
         {
             Type = ASTType.String;
         }
-        public StringAST(string InValue) : this()
+        public StringAST(string InLiteral) : this()
         {
-            Value = InValue;
+            Literal = InLiteral;
         }
     }
 
@@ -145,7 +167,7 @@ namespace Moonquake
         }
     }
 
-    public class ArrayAST : AST
+    public class ArrayAST : ExpressionAST
     {
         public List<StringAST> Value = new List<StringAST>();
 

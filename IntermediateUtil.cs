@@ -36,7 +36,7 @@ namespace Moonquake
                 {
                     var s = (StringAST)ast;
                     Indent(depth + 1);
-                    Console.WriteLine($"\"{s.Value}\"");
+                    Console.WriteLine($"LIT\"{s.Literal}\", RES\"{s.Resolved}\"");
                     break;
                 }
 
@@ -104,7 +104,7 @@ namespace Moonquake
                     foreach (var v in array.Value)
                     {
                         Indent(depth + 2);
-                        Console.WriteLine($"\"{v.Value}\"");
+                        Console.WriteLine($"LIT\"{v.Literal}\" RES\"{v.Resolved}\"");
                     }
                     break;
                 }

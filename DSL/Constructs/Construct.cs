@@ -10,6 +10,8 @@ namespace Moonquake.DSL.Construct
     }
     public abstract class Construct
     {
+        public StringAST Name = new StringAST();
+        
         public abstract ConstructType GetConstructType();
     }
 }

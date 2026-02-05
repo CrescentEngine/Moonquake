@@ -7,8 +7,30 @@ using Moonquake.DSL;
 
 namespace Moonquake
 {
+    public enum Architectures
+    {
+        x64,
+        ARM64,
+        x86
+    }
+    public enum Platforms
+    {
+        Windows,
+        Linux
+    }
+
+    public struct BuildOrder
+    {
+        public string Root;
+        public string Configuration;
+        public Architectures Architecture;
+        public Platforms Platform;
+    }
+
     public static class Moonquake
     {
+        public static BuildOrder BuildOrder = new BuildOrder();
+        
         private static int Main(string[] Arguments)
         {
             if (Arguments.Length == 0 || Arguments.Length > 2)
