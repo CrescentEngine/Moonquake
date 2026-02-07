@@ -40,6 +40,7 @@ namespace Moonquake
     public class AST
     {
         public ASTType Type = ASTType.Noop;
+        public SourceInfo SrcInfo;
     }
 
     public class NoopAST : AST
@@ -108,13 +109,13 @@ namespace Moonquake
     public class FieldAssignmentAST : AST
     {
         public string FieldName = "";
-        public AST Value = new NoopAST();
+        public ExpressionAST Value = new ExpressionAST();
 
         public FieldAssignmentAST()
         {
             Type = ASTType.FieldAssignment;
         }
-        public FieldAssignmentAST(string InFieldName, AST InValue) : this()
+        public FieldAssignmentAST(string InFieldName, ExpressionAST InValue) : this()
         {
             FieldName = InFieldName;
             Value = InValue;
@@ -124,13 +125,13 @@ namespace Moonquake
     public class FieldAppendmentAST : AST
     {
         public string FieldName = "";
-        public AST Value = new NoopAST();
+        public ExpressionAST Value = new ExpressionAST();
 
         public FieldAppendmentAST()
         {
             Type = ASTType.FieldAppendment;
         }
-        public FieldAppendmentAST(string InFieldName, AST InValue) : this()
+        public FieldAppendmentAST(string InFieldName, ExpressionAST InValue) : this()
         {
             FieldName = InFieldName;
             Value = InValue;
@@ -140,13 +141,13 @@ namespace Moonquake
     public class FieldErasureAST : AST
     {
         public string FieldName = "";
-        public AST Value = new NoopAST();
+        public ExpressionAST Value = new ExpressionAST();
 
         public FieldErasureAST()
         {
             Type = ASTType.FieldErasure;
         }
-        public FieldErasureAST(string InFieldName, AST InValue) : this()
+        public FieldErasureAST(string InFieldName, ExpressionAST InValue) : this()
         {
             FieldName = InFieldName;
             Value = InValue;
@@ -182,6 +183,26 @@ namespace Moonquake
         public ArrayAST(List<StringAST> InValue) : this()
         {
             Value = InValue;
+        }
+
+        public string[] ConstructLiteralStringArray()
+        {
+            string[] ArrayValue = new string[Value.Count];
+            for (int i = 0; i < Value.Count; i++)
+            {
+                ArrayValue[i] = Value[i].Literal;
+            }
+            return ArrayValue;
+        }
+
+        public string[] ConstructResolvedStringArray()
+        {
+            string[] ArrayValue = new string[Value.Count];
+            for (int i = 0; i < Value.Count; i++)
+            {
+                ArrayValue[i] = Value[i].Resolved;
+            }
+            return ArrayValue;
         }
     }
 }

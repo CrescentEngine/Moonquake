@@ -1,12 +1,14 @@
 // Copyright (C) 2026 ychgen, all rights reserved.
 
-namespace Moonquake.DSL.Construct
+namespace Moonquake.DSL.Constructs
 {
     public enum ModuleLanguageStandard
     {
+        Cpp11, // NOTE: With MSVC, Cpp14 will be used! It doesn't support explicit C++11 mode.
         Cpp14,
         Cpp17,
-        Cpp20
+        Cpp20,
+        Cpp23
     }
     public enum ModuleOutputType
     {
@@ -31,23 +33,20 @@ namespace Moonquake.DSL.Construct
 
     public class Module : Construct
     {
-        public StringAST Path = new StringAST();
-        public ModuleLanguageStandard LanguageStandard;
-        public ModuleOutputType OutputType;
-        public StringAST OutputName = new StringAST();
-        public StringAST OutputPath = new StringAST();
-        public StringAST IntermediatePath = new StringAST();
-        /// <summary>
-        /// Every C/C++ header & translation unit will be recursively discovered in these directories and added to build.
-        /// </summary>
-        public List<StringAST> RootSourcePaths = new List<StringAST>();
-        /// <summary>
-        /// Individual C/C++ header & translation units that will be used in build.
-        /// </summary>
-        public List<StringAST> Sources = new List<StringAST>();
-        public ModuleRuntimeLibraries RuntimeLibraries;
-        public ModuleOptimization Optimization;
-        public bool DebugSymbols;
+        public Module()
+        {
+            NewString("Path");
+            NewConstraint<ModuleLanguageStandard>("LanguageStandard", ModuleLanguageStandard.Cpp14);
+            NewConstraint<ModuleOutputType>("OutputType", ModuleOutputType.ConsoleExecutable);
+            NewString("OutputName");
+            NewString("OutputPath");
+            NewString("IntermediatePath");
+            NewArray("RootSourcePaths");
+            NewArray("Sources");
+            NewConstraint<ModuleRuntimeLibraries>("RuntimeLibraries", ModuleRuntimeLibraries.UseDebug);
+            NewConstraint<ModuleOptimization>("Optimization", ModuleOptimization.Off);
+            NewBoolean("bDebugSymbols");
+        }
 
         public override ConstructType GetConstructType() => ConstructType.Module;
     }

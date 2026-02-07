@@ -2,6 +2,7 @@
 
 using System;
 using System.IO;
+using System.Runtime.InteropServices;
 using Moonquake.CodeGen;
 using Moonquake.DSL;
 
@@ -33,26 +34,37 @@ namespace Moonquake
         
         private static int Main(string[] Arguments)
         {
-            if (Arguments.Length == 0 || Arguments.Length > 2)
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                Console.WriteLine("Moonquake usage: [BuildPath:String](Either path to .mqroot or a directory containing only a singular one.) [Backend:{\"VS\",\"Make\"}]<Optional>(Recommended backend will be chosen based on your OS and installed toolchains.)");
-                return 1;
+                BuildOrder.Platform = Platforms.Windows;
             }
-            string BuildPath = Arguments[0];
-            Backend Backend = Backend.Null;
-            if (Arguments.Length == 2)
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
             {
-                switch (Arguments[1])
-                {
-                case "VS":   Backend = Backend.VisualStudio; break;
-                case "Make": Backend = Backend.Make;         break;
-                default:
-                    Console.WriteLine($"Error: Invalid Backend '{Backend}' was provided.");
-                    return 1;
-                }
+                BuildOrder.Platform = Platforms.Linux;
             }
 
-            string PathToRoot = BuildPath;
+            //if (Arguments.Length == 0 || Arguments.Length > 2)
+            //{
+            //    Console.WriteLine("Moonquake usage: [BuildPath:String](Either path to .mqroot or a directory containing only a singular one.) [Backend:{\"VS\",\"Make\"}]<Optional>(Recommended backend will be chosen based on your OS and installed toolchains.)");
+            //    return 1;
+            //}
+            //string BuildPath = Arguments[0];
+            //Backend Backend = Backend.Null;
+            //if (Arguments.Length == 2)
+            //{
+            //    switch (Arguments[1])
+            //    {
+            //    case "VS":   Backend = Backend.VisualStudio; break;
+            //    case "Make": Backend = Backend.Make;         break;
+            //    default:
+            //        Console.WriteLine($"Error: Invalid Backend '{Backend}' was provided.");
+            //        return 1;
+            //    }
+            //}
+
+            string PathToRoot = ".\\Examples\\HelloWorld";
+            string BuildPath = PathToRoot;
+            //string PathToRoot = BuildPath;
             if (PathToRoot.EndsWith(".mqroot"))
             {
                 if (!File.Exists(PathToRoot))
@@ -60,6 +72,7 @@ namespace Moonquake
                     Console.WriteLine($"Error: Given MQROOT file '{PathToRoot}' doesn't exist or is inaccessible.");
                     return 1;
                 }
+                PathToRoot = Path.GetFullPath(PathToRoot);
             }
             else
             {
@@ -97,12 +110,14 @@ namespace Moonquake
                     Console.WriteLine($"Error: Given MQROOT file '{PathToRoot}' (discovered from build path '{BuildPath}) doesn't exist or is inaccessible.");
                     return 1;
                 }
+                PathToRoot = Path.GetFullPath(PathToRoot);
                 Console.WriteLine($"Detected Root File: {PathToRoot}");
             }
-
-            Parser RootParser = new Parser(new Lexer(File.ReadAllText(PathToRoot)));
+            
+            Parser RootParser = new Parser(new Lexer(PathToRoot, File.ReadAllText(PathToRoot)));
             CompoundAST RootNode = RootParser.Parse();
-            Visitor RootVisitor = new Visitor();
+            Visitor RootVisitor = new Visitor(PathToRoot);
+            Directory.SetCurrentDirectory(Path.GetDirectoryName(PathToRoot)!);
             RootVisitor.Visit(RootNode);
 
             return 0;

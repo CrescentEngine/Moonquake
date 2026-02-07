@@ -1,14 +1,17 @@
 // Copyright (C) 2026 ychgen, all rights reserved.
 
-namespace Moonquake.DSL.Construct
+namespace Moonquake.DSL.Constructs
 {
     public class Root : Construct
     {
-        public List<StringAST> Configurations = new List<StringAST>();
-        public List<StringAST> Platforms      = new List<StringAST>();
-        public List<StringAST> Architectures  = new List<StringAST>();
-        public List<StringAST> Projects       = new List<StringAST>();
-        public StringAST       StartProject   = new StringAST();
+        public Root()
+        {
+            NewArray("Configurations", [ "Debug", "Release" ]);
+            NewArray("Architectures", ["x64"]);
+            NewArray("Platforms", [ Moonquake.BuildOrder.Platform.ToString() ]);
+            NewArray("Modules");
+            NewString("MainModule");
+        }
 
         public override ConstructType GetConstructType() => ConstructType.Root;
     }

@@ -26,22 +26,31 @@ namespace Moonquake.DSL
     {
         public string Value = "";
         public TokenType Type = TokenType.Invalid;
+        public SourceInfo SrcInfo;
 
         public Token()
         {
         }
-
-        public Token(char InValue, TokenType InType)
+        public Token(char InValue, TokenType InType, SourceInfo InSrcInfo)
         {
-            Value = InValue.ToString();
-            Type  = InType;
+            Value   = InValue.ToString();
+            Type    = InType;
+            SrcInfo = InSrcInfo;
+        }
+        public Token(string InValue, TokenType InType, SourceInfo InSrcInfo)
+        {
+            Value   = InValue;
+            Type    = InType;
+            SrcInfo = InSrcInfo;
         }
 
-        public Token(string InValue, TokenType InType)
+        public Token Originate(SourceInfo InSrcInfo)
         {
-            Value = InValue;
-            Type  = InType;
+            SrcInfo = InSrcInfo;
+            return this;
         }
+
+        public override string ToString() => $"Token: {Value} {Type}";
 
         public string GetValue() => Value;
         public TokenType GetTokenType() => Type;

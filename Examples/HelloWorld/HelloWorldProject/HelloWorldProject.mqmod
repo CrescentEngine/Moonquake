@@ -1,6 +1,10 @@
 DeclModule("HelloWorldProject")
 {
-    LanguageStandard = "C++17";
+    LanguageStandard = "Cpp17";
+    # MQBDL supports "field unassignments" that reset the value of fields to their defaults. LanguageStandard by default is Cpp14.
+    ~LanguageStandard;
+    # That was experimenation and showcasing, let's move on.
+    LanguageStandard = "Cpp17";
     
     OutputType       = "ConsoleExecutable";
     OutputName       = "%ModuleName%";
@@ -19,8 +23,8 @@ DeclModule("HelloWorldProject")
         {
             # Special DefineGlobalMacro for C/C++ projects.
             DefineGlobalMacro("HELLOWORLD_USE_WIN32_MESSAGEBOX");
-            # For Windows, WindowedApplication changes the subsystem to WINDOWS from CONSOLE so WinMain will be used.
-            OutputType = "WindowedApplication"; # Field reassignment is possible.
+            # For Windows, WindowedExecutable changes the subsystem to WINDOWS from CONSOLE so WinMain will be used.
+            OutputType = "WindowedExecutable"; # Field reassignment is possible.
         };
     };
 
@@ -32,7 +36,7 @@ DeclModule("HelloWorldProject")
     When("%Configuration%", "Release")
     {
         RuntimeLibraries = "UseRelease";
-        # All possible OptimizationLevel values:
+        # All possible Optimization values:
         #   Off: Zero optimization, code should stay as is.
         #   Balanced: Balanced optimization between code size and runtime performance.
         #   Smallest: Optimize for the smallest possible code size.

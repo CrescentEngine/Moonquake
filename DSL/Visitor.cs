@@ -14,11 +14,17 @@ namespace Moonquake.DSL
     }
     struct VisitorContext
     {
-        public EvaluationContext    EvalContext = EvaluationContext.GlobalScope;
-        public Construct.Construct? Construct   = null;
+        public EvaluationContext     EvalContext = EvaluationContext.GlobalScope;
+        public Constructs.Construct? Construct   = null;
 
         public VisitorContext()
         {
+        }
+
+        public VisitorContext(VisitorContext Other)
+        {
+            EvalContext = Other.EvalContext;
+            Construct = Other.Construct;
         }
     }
 
@@ -76,35 +82,50 @@ namespace Moonquake.DSL
     public class Visitor
     {
         /// <summary>
-        /// Context is only singular and not a stack because MQBDL doesn't support nested constructs.
-        /// Maybe update in the future if nested constructs are added but it's highly unlikely.
+        /// Context is only singular and not a stack because MQBDL doesn't support nested Constructs.
+        /// Maybe update in the future if nested Constructs are added but it's highly unlikely.
         /// </summary>
-        private VisitorContext       Context = new VisitorContext();
-        private List<Construct.Root> Roots   = new List<Construct.Root>();
+        private VisitorContext Context = new VisitorContext();
         private Dictionary<string, DirectiveHandler> DirectiveDict = new();
         private LanguageVersion DeclaredVersion = LanguageVersion.Invalid;
+        private string Filepath = "";
 
-        public Visitor()
+        private Dictionary<string, Constructs.Root>   Roots   = new();
+        private Dictionary<string, Constructs.Module> Modules = new();
+        private Dictionary<string, Constructs.Schema> Schemas = new();
+
+        public Visitor(string InFilepath)
         {
+            Filepath = InFilepath;
+
             DirectiveDict[Directives.DECLARE_VERSION] =
-            new DirectiveBuilder().On(Directive_DeclVersion, ASTType.String).In(EvaluationContext.GlobalScope).Build();
+            new DirectiveBuilder().On(Dir_DECLARE_VERSION, ASTType.String).In(EvaluationContext.GlobalScope).Build();
 
             DirectiveDict[Directives.DECLARE_ROOT] =
-            new DirectiveBuilder().On(Directive_DeclRoot, ASTType.String).In(EvaluationContext.GlobalScope).Bodily().Build();
+            new DirectiveBuilder().On(Dir_DECLARE_ROOT, ASTType.String).In(EvaluationContext.GlobalScope).Bodily().Build();
 
             DirectiveDict[Directives.DECLARE_SCHEMA] =
-            new DirectiveBuilder().On(Directive_DeclSchema_Dflt, ASTType.String)
-                                  .On(Directive_DeclSchema_Inherit, ASTType.String, ASTType.String)
+            new DirectiveBuilder().On(Dir_DECLARE_SCHEMA_Dflt, ASTType.String)
+                                  .On(Dir_DECLARE_SCHEMA_Inherit, ASTType.String, ASTType.String)
                                   .In(EvaluationContext.GlobalScope).Bodily().Build();
 
             DirectiveDict[Directives.DECLARE_MODULE] =
-            new DirectiveBuilder().On(Directive_DeclModule_Dflt, ASTType.String)
-                                  .On(Directive_DeclModule_Schemed, ASTType.String, ASTType.String)
+            new DirectiveBuilder().On(Dir_DECLARE_MODULE_Dflt, ASTType.String)
+                                  .On(Dir_DECLARE_MODULE_Schemed, ASTType.String, ASTType.String)
                                   .In(EvaluationContext.GlobalScope).Bodily().Build();
+            
+            DirectiveDict[Directives.INCLUDE_MODULE] =
+            new DirectiveBuilder().On(Dir_INCLUDE_MODULE, ASTType.String).In(EvaluationContext.GlobalScope).Build();
+            
+            DirectiveDict[Directives.MACRO_DEFINE] =
+            new DirectiveBuilder().On(Dir_MACRO_DEFINE_Dflt, ASTType.String)
+                                  .On(Dir_MACRO_DEFINE_Valued, ASTType.String, ASTType.String)
+                                  .In(EvaluationContext.SchemaScope, EvaluationContext.ModuleScope).Build();
         }
 
-        // Call this after you call Visit(MasterCompoundAST) to acquire roots and every other construct that contains every information.
-        public List<Construct.Root> GetRoots() => Roots;
+        public Dictionary<string, Constructs.Root>   GetRoots()   => Roots;
+        public Dictionary<string, Constructs.Module> GetModules() => Modules;
+        public Dictionary<string, Constructs.Schema> GetSchemas() => Schemas;
 
         /// <summary>
         /// Resets the Visitor into a clean state.
@@ -187,10 +208,10 @@ namespace Moonquake.DSL
                 {
                 case EvaluationContext.ModuleScope:
                 {
-                    Construct.Module Mod = (Construct.Module) Context.Construct;
+                    Constructs.Module Mod = (Constructs.Module) Context.Construct;
 
-                    Builder.Replace("%ModuleName%", Mod.Name.Resolved);
-                    Builder.Replace("%ModulePath%", Mod.Path.Resolved);
+                    Builder.Replace("%ModuleName%", Mod.Name);
+                    Builder.Replace("%ModulePath%", Mod.Str("Path"));
                     Builder.Replace("%Configuration%", Moonquake.BuildOrder.Configuration);
                     Builder.Replace("%Platform%", Moonquake.BuildOrder.Platform.ToString());
                     Builder.Replace("%Architecture%", Moonquake.BuildOrder.Architecture.ToString());
@@ -213,10 +234,9 @@ namespace Moonquake.DSL
             {
                 if (Node.DirectiveName != Directives.DECLARE_VERSION)
                 {
-                    Console.WriteLine(
+                    throw new Exception(
                         $"Visitor.Visit() error: The first statement to be made within a MQBDL file must be a {Directives.DECLARE_VERSION}() directive."
                     );
-                    Environment.Exit(1);
                 }
             }
 
@@ -230,29 +250,45 @@ namespace Moonquake.DSL
 
             if (!DirectiveDict.ContainsKey(Node.DirectiveName))
             {
-                Console.WriteLine($"Visitor.VisitDirective() error: Visiting directive named '{Node.DirectiveName}', but no such directive exists at all.");
-                Environment.Exit(1);
+                throw new Exception($"Visitor.VisitDirective() error: Visiting directive named '{Node.DirectiveName}()', but no such directive exists at all.");
             }
             DirectiveHandler Handler = DirectiveDict[Node.DirectiveName];
 
             if (!Handler.ValidContexts.Contains(Context.EvalContext))
             {
-                Console.WriteLine($"Visitor.VisitDirective() error: Directive '{Node.DirectiveName}' cannot be executed within a {Context.EvalContext} context.");
-                Environment.Exit(1);
+                if (Handler.ValidContexts.Length == 1)
+                {
+                    throw new Exception($"Visitor.VisitDirective() error: Directive '{Node.DirectiveName}()' can only be executed within a '{Handler.ValidContexts[0]}' context, but code is currently in a '{Context.EvalContext}'.");
+                }
+                else
+                {
+                    string ValidContextsText = $"{Handler.ValidContexts[0]}";
+                    for (int i = 1; i < Handler.ValidContexts.Length; i++)
+                    {
+                        string Context = Handler.ValidContexts[i].ToString();
+                        if (i + 1 != Handler.ValidContexts.Length)
+                        {
+                            ValidContextsText += $", {Context}";
+                        }
+                        else
+                        {
+                            ValidContextsText += $" and {Context}";
+                        }
+                    }
+                    throw new Exception($"Visitor.VisitDirective() error: Directive '{Node.DirectiveName}()' can only be executed within '{ValidContextsText}' contexts, but code is currently in a '{Context.EvalContext}'.");
+                }
             }
 
             if (Handler.Bodily)
             {
                 if (Node.Body is null)
                 {
-                    Console.WriteLine($"Visitor.VisitDirective() errror: Directive '{Node.DirectiveName}' cannot have a body.");
-                    Environment.Exit(1);
+                    throw new Exception($"Visitor.VisitDirective() errror: Directive '{Node.DirectiveName}()' cannot have a body.");
                 }
             }
             else if (Node.Body is not null)
             {
-                Console.WriteLine($"Visitor.VisitDirective() errror: Directive '{Node.DirectiveName}' must have a body.");
-                Environment.Exit(1);
+                throw new Exception($"Visitor.VisitDirective() errror: Directive '{Node.DirectiveName}()' must have a body.");
             }
 
             DirectiveResult Result = DirectiveResult.InvalidOverload;
@@ -263,29 +299,63 @@ namespace Moonquake.DSL
             
             if (Result != DirectiveResult.Successful)
             {
-                Console.WriteLine($"Visitor.VisitDirective() error: Directive '{Node.DirectiveName}' failed with error code '{Result}'.");
-                Environment.Exit(1);
+                throw new Exception($"Visitor.VisitDirective() error: Directive '{Node.DirectiveName}()' failed with error code '{Result}'.");
             }
         }
 
         private void VisitFieldAssignment(FieldAssignmentAST Node)
         {
-            
+            if (Context.Construct is null)
+            {
+                throw new Exception($"Visitor.VisitFieldAssignment() error: Cannot assign to a field on global scope, no construct is in context.");
+            }
+            Visit(Node.Value); // Visit RHS (Right Hand Side, thing we are assigning the field.).
+            Constructs.FieldMutationResult Result = Context.Construct.AssignField(Node.FieldName, Node.Value);
+            if (Result != Constructs.FieldMutationResult.Successful)
+            {
+                throw new Exception($"Visitor.VisitFieldAssignment() error: Assignment to field '{Node.FieldName}' failed with error code '{Result}'.");
+            }
         }
 
         private void VisitFieldAppendment(FieldAppendmentAST Node)
         {
-            
+            if (Context.Construct is null)
+            {
+                throw new Exception($"Visitor.VisitFieldAppendment() error: Cannot append to a field on global scope, no construct is in context.");
+            }
+            Visit(Node.Value); // Visit RHS (Right Hand Side, thing we are appending to the field.).
+            Constructs.FieldMutationResult Result = Context.Construct.AppendToField(Node.FieldName, Node.Value);
+            if (Result != Constructs.FieldMutationResult.Successful)
+            {
+                throw new Exception($"Visitor.VisitFieldAppendment() error: Appendment to field '{Node.FieldName}' failed with error code '{Result}'.");
+            }
         }
 
         private void VisitFieldErasure(FieldErasureAST Node)
         {
-            
+            if (Context.Construct is null)
+            {
+                throw new Exception($"Visitor.VisitFieldErasure() error: Cannot erase from a field on global scope, no construct is in context.");
+            }
+            Visit(Node.Value); // Visit RHS (Right Hand Side, thing we are erasing from the field.).
+            Constructs.FieldMutationResult Result = Context.Construct.EraseFromField(Node.FieldName, Node.Value);
+            if (Result != Constructs.FieldMutationResult.Successful)
+            {
+                throw new Exception($"Visitor.VisitFieldErasure() error: Erasure from field '{Node.FieldName}' failed with error code '{Result}'.");
+            }
         }
 
         private void VisitFieldUnassignment(FieldUnassignmentAST Node)
         {
-            
+            if (Context.Construct is null)
+            {
+                throw new Exception($"Visitor.VisitFieldUnassignment() error: Cannot unassign a field on global scope, no construct is in context.");
+            }
+            Constructs.FieldMutationResult Result = Context.Construct.UnassignField(Node.FieldName);
+            if (Result != Constructs.FieldMutationResult.Successful)
+            {
+                throw new Exception($"Visitor.VisitFieldUnassignment() error: Unassignment of field '{Node.FieldName}' failed with error code '{Result}'.");
+            }
         }
 
         private void VisitArray(ArrayAST Node)
@@ -296,12 +366,11 @@ namespace Moonquake.DSL
             }
         }
 
-        private DirectiveResult Directive_DeclVersion(DirectiveAST Directive)
+        private DirectiveResult Dir_DECLARE_VERSION(DirectiveAST Directive)
         {
             if (DeclaredVersion != LanguageVersion.Invalid)
             {
-                Console.WriteLine($"DeclVersion() directive error: Language version was already declared as {DeclaredVersion} before.");
-                return DirectiveResult.Failure;
+                throw new Exception($"{Directives.DECLARE_VERSION}() directive error: Language version was already declared as '{DeclaredVersion}' before.");
             }
 
             string VersionString = ((StringAST) Directive.Parameters.Compound[0]).Resolved;
@@ -311,36 +380,134 @@ namespace Moonquake.DSL
             }
             catch
             {
-                Console.WriteLine($"DeclVersion() directive error: Language version string '{VersionString}' couldn't be parsed.");
-                return DirectiveResult.Failure;
+                throw new Exception($"{Directives.DECLARE_VERSION}() directive error: Language version string '{VersionString}' couldn't be parsed.");
             }
 
             return DirectiveResult.Successful;
         }
 
-        private DirectiveResult Directive_DeclRoot(DirectiveAST Directive)
+        private DirectiveResult Dir_DECLARE_ROOT(DirectiveAST Directive)
+        {
+            string ConstructName = ((StringAST) Directive.Parameters.Compound[0]).Resolved;
+            if (Roots.ContainsKey(ConstructName))
+            {
+                throw new Exception($"{Directives.DECLARE_ROOT}() directive error: Attempting to declare a root with name '{ConstructName}', but a root with that name already exists.");
+            }
+            Constructs.Root Subject = new Constructs.Root
+            {
+                Name = ConstructName
+            };
+
+            VisitorContext PrevContext = DupeCtx();
+            Context.EvalContext = EvaluationContext.RootScope;
+            Context.Construct = Subject;
+
+            Visit(Directive.Body!);
+            Roots[ConstructName] = Subject;
+            
+            Context = PrevContext; // restore context
+            return DirectiveResult.Successful;
+        }
+
+        private DirectiveResult Dir_DECLARE_SCHEMA_Dflt(DirectiveAST Directive)
+        {
+            string ConstructName = ((StringAST) Directive.Parameters.Compound[0]).Resolved;
+            if (Schemas.ContainsKey(ConstructName))
+            {
+                throw new Exception($"{Directives.DECLARE_ROOT}() directive error: Attempting to declare a schema with name '{ConstructName}', but a schema with that name already exists.");
+            }
+            Constructs.Schema Subject = new Constructs.Schema
+            {
+                Name = ConstructName
+            };
+
+            VisitorContext PrevContext = DupeCtx();
+            Context.EvalContext = EvaluationContext.SchemaScope;
+            Context.Construct = Subject;
+
+            Visit(Directive.Body!);
+            Schemas[ConstructName] = Subject;
+            
+            Context = PrevContext; // restore context
+            return DirectiveResult.Successful;
+        }
+
+        private DirectiveResult Dir_DECLARE_SCHEMA_Inherit(DirectiveAST Directive)
         {
             return DirectiveResult.Unimplemented;
         }
 
-        private DirectiveResult Directive_DeclSchema_Dflt(DirectiveAST Directive)
+        private DirectiveResult Dir_DECLARE_MODULE_Dflt(DirectiveAST Directive)
+        {
+            string ConstructName = ((StringAST) Directive.Parameters.Compound[0]).Resolved;
+            if (Modules.ContainsKey(ConstructName))
+            {
+                throw new Exception($"{Directives.DECLARE_ROOT}() directive error: Attempting to declare a module with name '{ConstructName}', but a module with that name already exists.");
+            }
+            Constructs.Module Subject = new Constructs.Module
+            {
+                Name = ConstructName
+            };
+
+            VisitorContext PrevContext = DupeCtx();
+            Context.EvalContext = EvaluationContext.ModuleScope;
+            Context.Construct = Subject;
+
+            Visit(Directive.Body!);
+            Modules[ConstructName] = Subject;
+            
+            Context = PrevContext; // restore context
+            return DirectiveResult.Successful;
+        }
+
+        private DirectiveResult Dir_DECLARE_MODULE_Schemed(DirectiveAST Directive)
         {
             return DirectiveResult.Unimplemented;
         }
 
-        private DirectiveResult Directive_DeclSchema_Inherit(DirectiveAST Directive)
+        private DirectiveResult Dir_INCLUDE_MODULE(DirectiveAST Directive)
+        {
+            Visit(Directive.Parameters);
+            string ToInclude = ((StringAST) Directive.Parameters.Compound[0]).Resolved;
+
+            if (File.Exists(ToInclude))
+            {
+                if (!ToInclude.EndsWith(".mqmod"))
+                {
+                    throw new Exception($"{Directives.INCLUDE_MODULE}() directive error: Filepath inclusions must end with '.mqmod'. Given '{ToInclude}' doesn't satisfy that.");
+                }
+                goto FileDetected;
+            }
+
+            if (!Directory.Exists(ToInclude))
+            {
+                throw new Exception($"{Directives.INCLUDE_MODULE}() directive error: No such directory '{ToInclude}' exists. If you meant to include a file, it must end in '.mqmod'.");
+            }
+
+            ToInclude = Path.Combine(ToInclude, Path.GetFileName(ToInclude.TrimEnd(Path.DirectorySeparatorChar))) + ".mqmod";
+            if (!File.Exists(ToInclude))
+            {
+                throw new Exception($"{Directives.INCLUDE_MODULE}() directive error: File to include '{ToInclude}' (deduced from directory-file inclusion relation rule) doesn't exist.");
+            }
+        FileDetected:
+            ToInclude = Path.GetFullPath(ToInclude);
+            string Content = File.ReadAllText(ToInclude);
+            Parser InclParser = new Parser(new Lexer(ToInclude, Content));
+            Visit(InclParser.Parse());
+
+            return DirectiveResult.Successful;
+        }
+
+        private DirectiveResult Dir_MACRO_DEFINE_Dflt(DirectiveAST Directive)
         {
             return DirectiveResult.Unimplemented;
         }
 
-        private DirectiveResult Directive_DeclModule_Dflt(DirectiveAST Directive)
+        private DirectiveResult Dir_MACRO_DEFINE_Valued(DirectiveAST Directive)
         {
             return DirectiveResult.Unimplemented;
         }
 
-        private DirectiveResult Directive_DeclModule_Schemed(DirectiveAST Directive)
-        {
-            return DirectiveResult.Unimplemented;
-        }
+        private VisitorContext DupeCtx() => new VisitorContext(Context);
     }
 }

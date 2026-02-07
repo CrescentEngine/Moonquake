@@ -9,7 +9,7 @@ int CALLBACK WinMain
     _In_     HINSTANCE hInstance,
     _In_opt_ HINSTANCE hPrevInstance,
     _In_     LPSTR     lpCmdLine,
-    _In_     int       nCmdShiw
+    _In_     int       nCmdShow
 )
 {
     MessageBox(NULL, TEXT("Hello, world!"), TEXT("HelloWorldProject"), MB_OK);

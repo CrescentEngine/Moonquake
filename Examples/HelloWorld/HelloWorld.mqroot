@@ -2,11 +2,11 @@ DeclVersion("1.0.0");
 DeclRoot("HelloWorld")
 {
     Configurations = [ "Debug", "Release" ];
-    Platforms      = [ "Windows", "Linux" ];
     Architectures  = [ "x64", "ARM64" ];
-    Projects       = [ "HelloWorldProject" ];
-    StartModule    =   "HelloWorldProject"; # For IDEs and "make run" command.
-                                            # If you don't provide StartProject no "make run" command will be generated.
+    Platforms      = [ "Windows", "Linux" ];
+    Modules        = [ "HelloWorldProject" ];
+    MainModule     =   "HelloWorldProject"; # For IDEs and "make run" command.
+                                            # If you don't provide MainModule no "make run" command will be generated.
                                             # For IDEs, the behavior is undefined. Most likely a random module selection.
 };
 Include("HelloWorldProject");

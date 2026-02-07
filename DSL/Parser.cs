@@ -33,14 +33,14 @@ namespace Moonquake
             }
             else
             {
-                Console.WriteLine($"Parser.Eat() error: Expected '{Type}' token, but got '{Token.Value}' of token type '{Token.Type}'!");
-                Environment.Exit(1);
+                throw new Exception($"Parser.Eat() error in file '{Token.SrcInfo.File}' at line {Token.SrcInfo.Line}: Expected a(n) '{Type}' token, but got '{Token.Value}' of token type '{Token.Type}'!");
             }
         }
 
         private CompoundAST ParseStatements()
         {
             CompoundAST compound = new CompoundAST();
+            compound.SrcInfo = Token.SrcInfo;
             compound.Compound.Add(ParseStatement());
 
             while (Token.Type == TokenType.Semicolon)
@@ -62,7 +62,7 @@ namespace Moonquake
             return new NoopAST();
         }
 
-        private AST ParseExpr()
+        private ExpressionAST ParseExpr()
         {
             switch (Token.Type)
             {
@@ -70,7 +70,7 @@ namespace Moonquake
             case TokenType.LeftBracket: return ParseArray();
             }
             // TODO: Take care of this
-            return new NoopAST();
+            throw new Exception($"Parser.ParseExpr() error: Invalid expression.");
         }
 
         private StringAST ParseString()
