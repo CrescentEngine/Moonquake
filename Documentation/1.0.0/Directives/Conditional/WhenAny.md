@@ -13,7 +13,7 @@ Pattern matching supports '*' as a wildcard matching zero or more characters. Ma
 | Parameter  | Type   | Description                                  |
 |------------|--------|----------------------------------------------|
 | Expression | String | The expression to mach the pattern to.       |
-| Patterns   | String | Patterns to match the expression against.    |
+| Patterns   | Array  | Patterns to match the expression against.    |
 
 **Body:**  
 The body of the WhenAny directive executes normally if the pattern matches. No special runtime context is introduced.
