@@ -19,6 +19,7 @@ namespace Moonquake.DSL
         Tilde,
         Plus,
         Minus,
+        Question,
         EOF
     }
 

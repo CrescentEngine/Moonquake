@@ -10,7 +10,8 @@ namespace Moonquake.DSL
         GlobalScope,
         RootScope,
         SchemaScope,
-        ModuleScope
+        ModuleScope,
+        DeferredScope
     }
     struct VisitorContext
     {
@@ -90,6 +91,9 @@ namespace Moonquake.DSL
         private LanguageVersion DeclaredVersion = LanguageVersion.Invalid;
         private string Filepath = "";
 
+        public const string BUILTIN_MODL = "BuiltinDefaultModule",
+                            BUILTIN_ROOT = "BuiltinDefaultRoot",
+                            BUILTIN_SCHM = "BuiltinDefaultSchema";
         private Dictionary<string, Constructs.Root>   Roots   = new();
         private Dictionary<string, Constructs.Module> Modules = new();
         private Dictionary<string, Constructs.Schema> Schemas = new();
@@ -97,30 +101,12 @@ namespace Moonquake.DSL
         public Visitor(string InFilepath)
         {
             Filepath = InFilepath;
+            RegisterStandardDirectives();
 
-            DirectiveDict[Directives.DECLARE_VERSION] =
-            new DirectiveBuilder().On(Dir_DECLARE_VERSION, ASTType.String).In(EvaluationContext.GlobalScope).Build();
-
-            DirectiveDict[Directives.DECLARE_ROOT] =
-            new DirectiveBuilder().On(Dir_DECLARE_ROOT, ASTType.String).In(EvaluationContext.GlobalScope).Bodily().Build();
-
-            DirectiveDict[Directives.DECLARE_SCHEMA] =
-            new DirectiveBuilder().On(Dir_DECLARE_SCHEMA_Dflt, ASTType.String)
-                                  .On(Dir_DECLARE_SCHEMA_Inherit, ASTType.String, ASTType.String)
-                                  .In(EvaluationContext.GlobalScope).Bodily().Build();
-
-            DirectiveDict[Directives.DECLARE_MODULE] =
-            new DirectiveBuilder().On(Dir_DECLARE_MODULE_Dflt, ASTType.String)
-                                  .On(Dir_DECLARE_MODULE_Schemed, ASTType.String, ASTType.String)
-                                  .In(EvaluationContext.GlobalScope).Bodily().Build();
-            
-            DirectiveDict[Directives.INCLUDE_MODULE] =
-            new DirectiveBuilder().On(Dir_INCLUDE_MODULE, ASTType.String).In(EvaluationContext.GlobalScope).Build();
-            
-            DirectiveDict[Directives.MACRO_DEFINE] =
-            new DirectiveBuilder().On(Dir_MACRO_DEFINE_Dflt, ASTType.String)
-                                  .On(Dir_MACRO_DEFINE_Valued, ASTType.String, ASTType.String)
-                                  .In(EvaluationContext.SchemaScope, EvaluationContext.ModuleScope).Build();
+            // Create builtin default constructs
+            Roots  [BUILTIN_ROOT] = new Constructs.Root   { Name = BUILTIN_ROOT };
+            Schemas[BUILTIN_SCHM] = new Constructs.Schema { Name = BUILTIN_SCHM };
+            Modules[BUILTIN_MODL] = new Constructs.Module { Name = BUILTIN_MODL };
         }
 
         public Dictionary<string, Constructs.Root>   GetRoots()   => Roots;
@@ -135,6 +121,8 @@ namespace Moonquake.DSL
             Context.EvalContext = EvaluationContext.GlobalScope;
             Context.Construct = null;
             Roots.Clear();
+            Modules.Clear();
+            Schemas.Clear();
         }
 
         public void Visit(AST Node)
@@ -174,6 +162,11 @@ namespace Moonquake.DSL
             case ASTType.FieldUnassignment:
             {
                 VisitFieldUnassignment((FieldUnassignmentAST) Node);
+                break;
+            }
+            case ASTType.DubiousAssignment:
+            {
+                VisitDubiousAssignment((DubiousAssignmentAST) Node);
                 break;
             }
             case ASTType.Array:
@@ -305,6 +298,10 @@ namespace Moonquake.DSL
 
         private void VisitFieldAssignment(FieldAssignmentAST Node)
         {
+            if (Context.EvalContext == EvaluationContext.DeferredScope)
+            {
+                throw new Exception($"Visitor.VisitFieldAssignment() error: Cannot assign fields in deferred scope.");
+            }
             if (Context.Construct is null)
             {
                 throw new Exception($"Visitor.VisitFieldAssignment() error: Cannot assign to a field on global scope, no construct is in context.");
@@ -319,6 +316,10 @@ namespace Moonquake.DSL
 
         private void VisitFieldAppendment(FieldAppendmentAST Node)
         {
+            if (Context.EvalContext == EvaluationContext.DeferredScope)
+            {
+                throw new Exception($"Visitor.VisitFieldAppendment() error: Cannot append to fields in deferred scope.");
+            }
             if (Context.Construct is null)
             {
                 throw new Exception($"Visitor.VisitFieldAppendment() error: Cannot append to a field on global scope, no construct is in context.");
@@ -333,6 +334,10 @@ namespace Moonquake.DSL
 
         private void VisitFieldErasure(FieldErasureAST Node)
         {
+            if (Context.EvalContext == EvaluationContext.DeferredScope)
+            {
+                throw new Exception($"Visitor.VisitFieldErasure() error: Cannot erase from fields in deferred scope.");
+            }
             if (Context.Construct is null)
             {
                 throw new Exception($"Visitor.VisitFieldErasure() error: Cannot erase from a field on global scope, no construct is in context.");
@@ -347,6 +352,10 @@ namespace Moonquake.DSL
 
         private void VisitFieldUnassignment(FieldUnassignmentAST Node)
         {
+            if (Context.EvalContext == EvaluationContext.DeferredScope)
+            {
+                throw new Exception($"Visitor.VisitFieldUnassignment() error: Cannot unassign fields in deferred scope.");
+            }
             if (Context.Construct is null)
             {
                 throw new Exception($"Visitor.VisitFieldUnassignment() error: Cannot unassign a field on global scope, no construct is in context.");
@@ -358,12 +367,99 @@ namespace Moonquake.DSL
             }
         }
 
+        private void VisitDubiousAssignment(DubiousAssignmentAST Node)
+        {
+            if (Context.Construct is null)
+            {
+                throw new Exception($"Visitor.VisitDubiousAssignment() error: Cannot dubiously assign a field on global scope, no construct is in context.");
+            }
+            if (Context.EvalContext != EvaluationContext.DeferredScope)
+            {
+                throw new Exception($"Visitor.VisitDubiousAssignment() error: Dubious assignment is only possible within the body of a Defer() directive's deferred scope.");
+            }
+            Visit(Node.Value); // Visit RHS (Right Hand Side, thing we are dubiously assigning the field.).
+            Constructs.FieldMutationResult Result = Context.Construct.DubiousAssign(Node.FieldName, Node.Value);
+            if
+            (
+                Result != Constructs.FieldMutationResult.Successful    &&
+                Result != Constructs.FieldMutationResult.FieldNotUnset &&
+                Result != Constructs.FieldMutationResult.FieldProtected
+            )
+            {
+                throw new Exception($"Visitor.VisitDubiousAssignment() error: Dubious assignment of field '{Node.FieldName}' failed with error code '{Result}'.");
+            }
+        }
+
         private void VisitArray(ArrayAST Node)
         {
             foreach (StringAST String in Node.Value)
             {
                 Visit(String);
             }
+        }
+
+        private void RegisterStandardDirectives()
+        {
+            DirectiveDict[Directives.DECLARE_VERSION] =
+            new DirectiveBuilder().On(Dir_DECLARE_VERSION, ASTType.String)
+                                  .In(EvaluationContext.GlobalScope).Build();
+
+            DirectiveDict[Directives.DECLARE_ROOT] =
+            new DirectiveBuilder().On(Dir_DECLARE_ROOT, ASTType.String)
+                                  .In(EvaluationContext.GlobalScope)
+                                  .Bodily().Build();
+
+            DirectiveDict[Directives.DECLARE_SCHEMA] =
+            new DirectiveBuilder().On(Dir_DECLARE_SCHEMA, ASTType.String)
+            // Schema inheritance idea scrapped.
+            //                    .On(Dir_DECLARE_SCHEMA_Inherit, ASTType.String, ASTType.String)
+                                  .In(EvaluationContext.GlobalScope)
+                                  .Bodily().Build();
+
+            DirectiveDict[Directives.DECLARE_MODULE] =
+            new DirectiveBuilder().On(Dir_DECLARE_MODULE_Dflt, ASTType.String)
+                                  .On(Dir_DECLARE_MODULE_Schemed, ASTType.String, ASTType.String)
+                                  .In(EvaluationContext.GlobalScope)
+                                  .Bodily().Build();
+            
+            DirectiveDict[Directives.INCLUDE_MODULE] =
+            new DirectiveBuilder().On(Dir_INCLUDE_MODULE, ASTType.String)
+                                  .In(EvaluationContext.GlobalScope).Build();
+
+            DirectiveDict[Directives.IF_PMATCH] =
+            new DirectiveBuilder().On(Dir_IF_PMATCH, ASTType.String, ASTType.String)
+                                  .In(EvaluationContext.RootScope, EvaluationContext.ModuleScope, EvaluationContext.SchemaScope, EvaluationContext.DeferredScope)
+                                  .Bodily().Build();
+
+            DirectiveDict[Directives.IF_PNOMATCH] =
+            new DirectiveBuilder().On(Dir_IF_PNOMATCH, ASTType.String, ASTType.String)
+                                  .In(EvaluationContext.RootScope, EvaluationContext.ModuleScope, EvaluationContext.SchemaScope, EvaluationContext.DeferredScope)
+                                  .Bodily().Build();
+
+            DirectiveDict[Directives.IF_PANYMATCH] =
+            new DirectiveBuilder().On(Dir_IF_PANYMATCH, ASTType.String, ASTType.Array)
+                                  .In(EvaluationContext.RootScope, EvaluationContext.ModuleScope, EvaluationContext.SchemaScope, EvaluationContext.DeferredScope)
+                                  .Bodily().Build();
+
+            DirectiveDict[Directives.DEFER_EXEC] =
+            new DirectiveBuilder().On(Dir_DEFER_EXEC)
+                                  .In(EvaluationContext.SchemaScope)
+                                  .Bodily().Build();
+            
+            DirectiveDict[Directives.FIELD_PROTECT] =
+            new DirectiveBuilder().On(Dir_FIELD_PROTECT, ASTType.String)
+                                  .In(EvaluationContext.ModuleScope)
+                                  .Build();
+            
+            DirectiveDict[Directives.FIELDS_PROTECT] =
+            new DirectiveBuilder().On(Dir_FIELDS_PROTECT)
+                                  .In(EvaluationContext.ModuleScope)
+                                  .Build();
+
+            DirectiveDict[Directives.MACRO_DEFINE] =
+            new DirectiveBuilder().On(Dir_MACRO_DEFINE_Dflt, ASTType.String)
+                                  .On(Dir_MACRO_DEFINE_Valued, ASTType.String, ASTType.String)
+                                  .In(EvaluationContext.ModuleScope, EvaluationContext.SchemaScope).Build();
         }
 
         private DirectiveResult Dir_DECLARE_VERSION(DirectiveAST Directive)
@@ -409,12 +505,12 @@ namespace Moonquake.DSL
             return DirectiveResult.Successful;
         }
 
-        private DirectiveResult Dir_DECLARE_SCHEMA_Dflt(DirectiveAST Directive)
+        private DirectiveResult Dir_DECLARE_SCHEMA(DirectiveAST Directive)
         {
             string ConstructName = ((StringAST) Directive.Parameters.Compound[0]).Resolved;
             if (Schemas.ContainsKey(ConstructName))
             {
-                throw new Exception($"{Directives.DECLARE_ROOT}() directive error: Attempting to declare a schema with name '{ConstructName}', but a schema with that name already exists.");
+                throw new Exception($"{Directives.DECLARE_SCHEMA}() directive error: Attempting to declare a schema with name '{ConstructName}', but a schema with that name already exists.");
             }
             Constructs.Schema Subject = new Constructs.Schema
             {
@@ -425,44 +521,86 @@ namespace Moonquake.DSL
             Context.EvalContext = EvaluationContext.SchemaScope;
             Context.Construct = Subject;
 
-            Visit(Directive.Body!);
+            Subject.Body = Directive.Body;
+            foreach (AST Node in Subject.Body!.Compound)
+            {
+                if (Node.Type == ASTType.Directive)
+                {
+                    DirectiveAST Dir = (DirectiveAST) Node;
+                    if (Dir.DirectiveName == Directives.DEFER_EXEC)
+                    {
+                        if (Subject.Defer is not null)
+                        {
+                            throw new Exception($"{Directives.DECLARE_SCHEMA}() directive error: Schema body contains multiple {Directives.DEFER_EXEC}() directives. Schemas can only contain one {Directives.DEFER_EXEC}() directive statement in its entire body.");
+                        }
+                        if (Dir.Body is null)
+                        {
+                            throw new Exception($"{Directives.DECLARE_SCHEMA}() directive error: {Directives.DEFER_EXEC}() directive has no body.");
+                        }
+                        Subject.Defer = Dir;
+                    }
+                }
+            }
             Schemas[ConstructName] = Subject;
             
             Context = PrevContext; // restore context
             return DirectiveResult.Successful;
         }
 
-        private DirectiveResult Dir_DECLARE_SCHEMA_Inherit(DirectiveAST Directive)
-        {
-            return DirectiveResult.Unimplemented;
-        }
-
         private DirectiveResult Dir_DECLARE_MODULE_Dflt(DirectiveAST Directive)
         {
-            string ConstructName = ((StringAST) Directive.Parameters.Compound[0]).Resolved;
-            if (Modules.ContainsKey(ConstructName))
-            {
-                throw new Exception($"{Directives.DECLARE_ROOT}() directive error: Attempting to declare a module with name '{ConstructName}', but a module with that name already exists.");
-            }
-            Constructs.Module Subject = new Constructs.Module
-            {
-                Name = ConstructName
-            };
+            StringAST InjectParameter = new StringAST(BUILTIN_SCHM);
+            Visit(InjectParameter);
 
-            VisitorContext PrevContext = DupeCtx();
-            Context.EvalContext = EvaluationContext.ModuleScope;
-            Context.Construct = Subject;
-
-            Visit(Directive.Body!);
-            Modules[ConstructName] = Subject;
-            
-            Context = PrevContext; // restore context
-            return DirectiveResult.Successful;
+            Directive.Parameters.Compound.Add(InjectParameter);
+            return Dir_DECLARE_MODULE_Schemed(Directive);
         }
 
         private DirectiveResult Dir_DECLARE_MODULE_Schemed(DirectiveAST Directive)
         {
-            return DirectiveResult.Unimplemented;
+            string ConstructName = ((StringAST) Directive.Parameters.Compound[0]).Resolved;
+            string TemplateName  = ((StringAST) Directive.Parameters.Compound[1]).Resolved;
+            if (Modules.ContainsKey(ConstructName))
+            {
+                throw new Exception($"{Directives.DECLARE_MODULE}() directive error: Attempting to declare a module with name '{ConstructName}', but a module with that name already exists.");
+            }
+            if (!Schemas.ContainsKey(TemplateName))
+            {
+                throw new Exception($"{Directives.DECLARE_MODULE}() directive error: Attempting to declare a module with name '{ConstructName}' templated from schema '{TemplateName}', but no such Schema construct exists.");
+            }
+            Constructs.Schema Template = Schemas[TemplateName];
+            Constructs.Module Subject = new Constructs.Module
+            {
+                Name     = ConstructName,
+                Template = Template
+            };
+
+            // We set SchemaScope because that's what we will execute but we mutate a Module.
+            // This is not a bug, it's intended.
+            VisitorContext PrevContext = DupeCtx();
+            Context.EvalContext = EvaluationContext.SchemaScope;
+            Context.Construct = Subject;
+
+            // Eval Order:
+            // 1. Schema Standard Body
+            if (Template.Body is not null)
+            {
+                Visit(Template.Body);
+            }
+            // 2. Module Standard Body
+            Context.EvalContext = EvaluationContext.ModuleScope;
+            Visit(Directive.Body!);
+            // 3. Schema Deferred Body
+            if (Template.Defer is not null)
+            {
+                Context.EvalContext = EvaluationContext.DeferredScope;
+                Visit(Template.Defer.Body!);
+            }
+
+            Modules[ConstructName] = Subject;
+            Context = PrevContext; // restore context
+
+            return DirectiveResult.Successful;
         }
 
         private DirectiveResult Dir_INCLUDE_MODULE(DirectiveAST Directive)
@@ -498,14 +636,95 @@ namespace Moonquake.DSL
             return DirectiveResult.Successful;
         }
 
+        private DirectiveResult Dir_IF_PMATCH(DirectiveAST Directive)
+        {
+            string Expr    = Directive.Parameters.Compound[0].As<StringAST>().Resolved;
+            string Pattern = Directive.Parameters.Compound[1].As<StringAST>().Resolved;
+
+            if (StringUtil.IsMatch(Expr, Pattern))
+            {
+                Visit(Directive.Body!);
+            }
+
+            return DirectiveResult.Successful;
+        }
+
+        private DirectiveResult Dir_IF_PNOMATCH(DirectiveAST Directive)
+        {
+            string Expr    = Directive.Parameters.Compound[0].As<StringAST>().Resolved;
+            string Pattern = Directive.Parameters.Compound[1].As<StringAST>().Resolved;
+
+            if (!StringUtil.IsMatch(Expr, Pattern))
+            {
+                Visit(Directive.Body!);
+            }
+
+            return DirectiveResult.Successful;
+        }
+
+        private DirectiveResult Dir_IF_PANYMATCH(DirectiveAST Directive)
+        {
+            string   Expr     = Directive.Parameters.Compound[0].As<StringAST>().Resolved;
+            string[] Patterns = Directive.Parameters.Compound[1].As<ArrayAST>().ConstructResolvedStringArray();
+
+            foreach (string Pattern in Patterns)
+            {
+                if (StringUtil.IsMatch(Expr, Pattern))
+                {
+                    Visit(Directive.Body!);
+                    break;
+                }
+            }
+
+            return DirectiveResult.Successful;
+        }
+
+        private DirectiveResult Dir_DEFER_EXEC(DirectiveAST Directive)
+        {
+            // Defer() is never actually really called, Schema just grabs its body.
+            // It is called in the sense that Dir_DEFER_EXEC gets called, but we do nothing here.
+            // Visitor handles Module Order of Execution in Dir_DECLARE_MODULE_Schemed.
+            return DirectiveResult.Successful;
+        }
+
+        private DirectiveResult Dir_FIELD_PROTECT(DirectiveAST Directive)
+        {
+            string FieldName = Directive.Parameters.Compound[0].As<StringAST>().Resolved;
+            Constructs.Module Module = (Constructs.Module) Context.Construct!;
+            Constructs.ConstructField? Field;
+            if (!Module.Fields.TryGetValue(FieldName, out Field))
+            {
+                throw new Exception($"{Directives.FIELD_PROTECT}() directive error: No such field as '{FieldName}' exists in this scope and context.");
+            }
+            Field.Protect();
+            return DirectiveResult.Successful;
+        }
+
+        private DirectiveResult Dir_FIELDS_PROTECT(DirectiveAST Directive)
+        {
+            Constructs.Module Module = (Constructs.Module) Context.Construct!;
+            foreach (var KVP in Module.Fields)
+            {
+                KVP.Value.Protect();
+            }
+            return DirectiveResult.Successful;
+        }
+
         private DirectiveResult Dir_MACRO_DEFINE_Dflt(DirectiveAST Directive)
         {
-            return DirectiveResult.Unimplemented;
+            string MacroDefinition = Directive.Parameters.Compound[0].As<StringAST>().Resolved;
+            Constructs.Module Module = (Constructs.Module) Context.Construct!;
+            Module.Array("GlobalMacros").Append(MacroDefinition);
+            return DirectiveResult.Successful;
         }
 
         private DirectiveResult Dir_MACRO_DEFINE_Valued(DirectiveAST Directive)
         {
-            return DirectiveResult.Unimplemented;
+            string MacroName = Directive.Parameters.Compound[0].As<StringAST>().Resolved;
+            string MacroValue = Directive.Parameters.Compound[1].As<StringAST>().Resolved;
+            Constructs.Module Module = (Constructs.Module) Context.Construct!;
+            Module.Array("GlobalMacros").Append($"{MacroName}={MacroValue}");
+            return DirectiveResult.Successful;
         }
 
         private VisitorContext DupeCtx() => new VisitorContext(Context);

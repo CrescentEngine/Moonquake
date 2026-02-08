@@ -2,7 +2,15 @@
 
 namespace Moonquake.DSL.Constructs
 {
-    public class Schema : Module
+    public class Schema : Construct
     {
+        public CompoundAST?  Body;
+        public DirectiveAST? Defer;
+
+        public Schema()
+        {
+        }
+        
+        public override ConstructType GetConstructType() => ConstructType.Schema;
     }
 }

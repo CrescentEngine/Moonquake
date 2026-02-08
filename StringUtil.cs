@@ -1,5 +1,8 @@
 // Copyright (C) 2026 ychgen, all rights reserved.
 
+using System.Collections.Concurrent;
+using System.Text.RegularExpressions;
+
 namespace Moonquake
 {
     public static class StringUtil
@@ -10,6 +13,7 @@ namespace Moonquake
         public const string Alpha      = LowerAlpha + UpperAlpha;
         public const string Alnum      = Alpha + Numeric;
         public const string Whitespace = " \f\n\r\t\v";
+        private static readonly ConcurrentDictionary<string, Regex> PatternCache = new();
 
         public static int FindFirstNotOf(string InStr, string Charset, int Position = 0)
         {
@@ -21,6 +25,18 @@ namespace Moonquake
                 }
             }
             return -1;
+        }
+
+        public static bool IsMatch(string Str, string Pattern)
+        {
+            Regex Rgx = PatternCache.GetOrAdd(Pattern, p =>
+            {
+                string Escaped = Regex.Escape(p);
+                string Final   = "^" + Escaped.Replace(@"\*", ".*") + "$";
+                return new Regex(Final, RegexOptions.Compiled);
+            });
+
+            return Rgx.IsMatch(Str);
         }
     }
 }

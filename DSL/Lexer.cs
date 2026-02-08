@@ -99,6 +99,7 @@ namespace Moonquake.DSL
             case '~': return new Token(CurBeforeChk, TokenType.Tilde, SrcInfo);
             case '+': return new Token(CurBeforeChk, TokenType.Plus, SrcInfo);
             case '-': return new Token(CurBeforeChk, TokenType.Minus, SrcInfo);
+            case '?': return new Token(CurBeforeChk, TokenType.Question, SrcInfo);
             default:  break;
             }
 
@@ -224,32 +225,6 @@ namespace Moonquake.DSL
 
             SrcInfo.EndIndex = Index++; // Skip closing quote.
             return new Token(Literal, TokenType.String, SrcInfo);
-
-        // Old method
-        //    int ReSearchIndex = -1;
-        //
-        //    Index++; // Skip opening quote
-        //ReSearch:
-        //    int ClosingQuoteIndex = Source.IndexOf('"', ReSearchIndex == -1 ? Index : ReSearchIndex);
-        //    if (ClosingQuoteIndex == -1)
-        //    {
-        //        Console.WriteLine
-        //        (
-        //            $"Lexer.CollectString() error: Quoted string literal that began at position {Index-1} has no matching closing quote. Returning IVLD token."
-        //        );
-        //        Index = Source.Length; // Lexing finished
-        //        return new Token("", TokenType.Invalid);
-        //    }
-        //    // TODO: Support all escape sequences
-        //    if (Source[ClosingQuoteIndex - 1] == '\\') // Handle \" (we only support \" escape sequence, wildcard sequence is handled by Visitor on the fly)
-        //    {
-        //        ReSearchIndex = ClosingQuoteIndex + 1;
-        //        goto ReSearch;
-        //    }
-        //    Token result = new Token(Source.Substring(Index, ClosingQuoteIndex - Index), TokenType.String);
-        //    result.Value = result.Value.Replace("\\\"", "\""); // Inefficient, should do fragment by fragment on the fly but it works anyway.
-        //    Index = ClosingQuoteIndex + 1;
-        //    return result;
         }
 
         private char Cur() => Source[Index];

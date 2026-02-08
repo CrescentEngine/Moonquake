@@ -17,6 +17,7 @@ namespace Moonquake
         FieldAppendment,   // arrayfield += str-expr; OR arrayfield += array-expr;
         FieldErasure,      // arrayfield -= str-expr; OR arrayfield -= array-expr;
         FieldUnassignment, // ~somefield;
+        DubiousAssignment, // strfield   ?= str-expr; OR arrayfield ?= array-expr;
         Array              // [ ...comma-led-str-exprs... ]
     }
 
@@ -41,6 +42,16 @@ namespace Moonquake
     {
         public ASTType Type = ASTType.Noop;
         public SourceInfo SrcInfo;
+
+        /// <summary>
+        /// Never call without making sure type is same.
+        /// Used to simplify syntax.
+        /// Check AST.Type (of type ASTType) to ensure same type.
+        /// </summary>
+        public T As<T>() where T : AST
+        {
+            return ((T) this);
+        }
     }
 
     public class NoopAST : AST
@@ -165,6 +176,22 @@ namespace Moonquake
         public FieldUnassignmentAST(string InFieldName) : this()
         {
             FieldName = InFieldName;
+        }
+    }
+
+    public class DubiousAssignmentAST : AST
+    {
+        public string FieldName = "";
+        public ExpressionAST Value = new ExpressionAST();
+
+        public DubiousAssignmentAST()
+        {
+            Type = ASTType.DubiousAssignment;
+        }
+        public DubiousAssignmentAST(string InFieldName, ExpressionAST InValue) : this()
+        {
+            FieldName = InFieldName;
+            Value = InValue;
         }
     }
 

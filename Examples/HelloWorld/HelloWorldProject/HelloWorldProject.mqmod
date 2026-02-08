@@ -4,7 +4,7 @@ DeclModule("HelloWorldProject")
     # MQBDL supports "field unassignments" that reset the value of fields to their defaults. LanguageStandard by default is Cpp14.
     ~LanguageStandard;
     # That was experimenation and showcasing, let's move on.
-    LanguageStandard = "Cpp17";
+    LanguageStandard = "Cpp14";
     
     OutputType       = "ConsoleExecutable";
     OutputName       = "%ModuleName%";
@@ -17,7 +17,7 @@ DeclModule("HelloWorldProject")
     # Sources += "Source/Main.cpp";
 
     # Change the 2nd 'No' to 'Yes' if you want a message box instead of console message for Windows.
-    When("Yes", "No")
+    When("Yes", "Yes")
     {
         When("%Platform%", "Windows")
         {

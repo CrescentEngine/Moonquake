@@ -33,6 +33,8 @@ namespace Moonquake.DSL.Constructs
 
     public class Module : Construct
     {
+        public Schema? Template;
+
         public Module()
         {
             NewString("Path");
@@ -43,6 +45,7 @@ namespace Moonquake.DSL.Constructs
             NewString("IntermediatePath");
             NewArray("RootSourcePaths");
             NewArray("Sources");
+            NewArray("GlobalMacros");
             NewConstraint<ModuleRuntimeLibraries>("RuntimeLibraries", ModuleRuntimeLibraries.UseDebug);
             NewConstraint<ModuleOptimization>("Optimization", ModuleOptimization.Off);
             NewBoolean("bDebugSymbols");

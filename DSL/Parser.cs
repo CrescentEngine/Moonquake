@@ -113,6 +113,7 @@ namespace Moonquake
             case TokenType.Equal:           return ParseFieldAssignment();
             case TokenType.Plus:            return ParseFieldAppendment();
             case TokenType.Minus:           return ParseFieldErasure();
+            case TokenType.Question:        return ParseDubiousAssignment();
             }
 
             // TODO: Take care of this
@@ -165,6 +166,18 @@ namespace Moonquake
             return AST;
         }
 
+        private DubiousAssignmentAST ParseDubiousAssignment()
+        {
+            DubiousAssignmentAST AST = new DubiousAssignmentAST();
+            AST.FieldName = PrevToken.Value;
+
+            Eat(TokenType.Question);
+            Eat(TokenType.Equal);
+            
+            AST.Value = ParseExpr();
+            return AST;
+        }
+
         private DirectiveAST ParseDirective()
         {
             DirectiveAST AST = new DirectiveAST();
@@ -196,6 +209,10 @@ namespace Moonquake
                 // Let's not remove, it isn't harmful.
 
                 Eat(TokenType.RightBrace);
+                if (Token.Type != TokenType.Semicolon)
+                {
+                    throw new Exception($"Parser.ParseDirective() error: Directive statement bodies must include a semicolon after the right curly brace, which is currently not the case with {AST.DirectiveName}().");
+                }
             }
 
             return AST;
