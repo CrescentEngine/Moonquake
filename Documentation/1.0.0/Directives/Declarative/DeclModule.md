@@ -1,8 +1,8 @@
 # DeclModule
 
-**DeclModule** is a directive that introduces a new [Module](../Constructs/Root.md) construct into the [Global Scope](../Scopes/GlobalScope.md).  
-Modules are the building blocks of [Roots](../Constructs/Root.md). Moonquake will build each module of a Root if a build order is ordered.
-Modules do not support inheritance from modules, however they can be templated from [Schemas](../Constructs/Schemas.md) which will bring its defaults and apply any deferred functionality.
+**DeclModule** is a directive that introduces a new [Module](../../Constructs/Root.md) construct into the [Global Scope](../../Scopes/GlobalScope.md).  
+Modules are the building blocks of [Roots](../../Constructs/Root.md). Moonquake will build each module of a Root if a build order is ordered.
+Modules do not support inheritance from modules, however they can be templated from [Schemas](../../Constructs/Schemas.md) which will bring its defaults and apply any deferred functionality.
 
 ---
 ### Overloads
@@ -16,7 +16,7 @@ Creates a new Module with the specified **Name**.
 | Name      | String | The name to assign to the new Module. |
 
 **Body:**  
-The directive body is a [Module Scope](../Scopes/ModuleScope.md) and is interpreted in that context.
+The directive body is a [Module Scope](../../Scopes/ModuleScope.md) and is interpreted in that context.
 
 **Example:**
 
@@ -24,8 +24,9 @@ The directive body is a [Module Scope](../Scopes/ModuleScope.md) and is interpre
 DeclModule("StrategyGame")
 {
     # Any valid statement in a Module Scope, such as assigning to the field 'IntermediatePath'.
-}
+};
 ```
+---
 
 #### `DeclModule(Name: String, Schema: String) { ... }`
 
@@ -37,9 +38,9 @@ Creates a new Module with the specified **Name**, templated from the given **Sch
 | Schema    | String | The name of the Schema to use as a template. |
 
 **Body:**  
-The directive body is a [Module Scope](../Scopes/ModuleScope.md) and is interpreted in that context.
+The directive body is a [Module Scope](../../Scopes/ModuleScope.md) and is interpreted in that context.
 The order of execution is as follows:
-1. Every statement (except a Defer() directive statement) of the Schema's body is run first.
+1. Every statement (except Defer() directive statements) of the Schema's body is run first.
 2. The module body is run.
 3. If provided, body of the Defer() directive of the Schema is run.
 
@@ -62,5 +63,5 @@ DeclModule("StrategyGame", "GameSchema")
     # After this, if the schema we used, 'GameSchema' in this case, had a Defer() directive statement
     # in it, the body of that directive will now be executed. If not, this phase is skipped.
     # After that, execution will exit from this scope.
-}
+};
 ```

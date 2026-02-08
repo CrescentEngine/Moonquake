@@ -8,7 +8,7 @@ namespace Moonquake.DSL
         Identifier,
         String,
         LeftParentheses,
-        RightParantheses,
+        RightParantheses, // TODO: Fix typo, cannot be bothered with it currently
         LeftBracket,
         RightBracket,
         LeftBrace,

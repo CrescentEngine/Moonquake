@@ -15,7 +15,7 @@ namespace Moonquake.DSL.Constructs
         ConsoleExecutable,
         WindowedExecutable,
         StaticLibrary,
-        SharedLibrary
+        DynamicLibrary
     }
     public enum ModuleRuntimeLibraries
     {
