@@ -1,6 +1,6 @@
 # ProtectAll
 
-**ProtectAll** is a special directive that's only valid within [module scopes](../../Scopes/ModuleScope.md). It marks all [fields](../../Concepts/Field.md) as immutable by the [dubious assignment operator](../../Operators/DubiousAssignment.md), which means the operation will result in no-op no matter what. This gives the module the power to enforce that a [schema](../../Constructs/Schema.md) cannot mutate the module in its [deferred scope](../../Scopes/DeferredScope.md) at all.
+**ProtectAll** is a special directive that's only valid within [module scopes](../../Scopes/ModuleScope.md). It marks all [fields](../../Concepts/Field.md) as immutable by the [dubious assignment operator](../../Operators/DubiousAssignment.md), which means the operation will result in no-op no matter what. This gives the module the power to enforce that a [schema](../../Constructs/Schema.md) cannot mutate the module in its [deferred scope](../../Scopes/DeferredScope.md) at all.  
 Multiple calls to this directive have no effect; only the first invocation counts.
 
 ---

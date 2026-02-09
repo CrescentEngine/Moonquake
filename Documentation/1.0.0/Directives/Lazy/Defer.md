@@ -1,6 +1,6 @@
 # Defer
 
-**Defer** is a special directive that's only valid within [Schema Scopes](../../Scopes/SchemaScope.md). The runtime records its body for deferred execution during [module order of evaluation, stage 3](../../Concept/ModuleOrderOfEvaluation.md), by [Modules](../../Constructs/Module.md) that are instantiated (templated) from its schema.
+**Defer** is a special directive that's only valid within [schema scopes](../../Scopes/SchemaScope.md). The runtime records its body for deferred execution during [module order of evaluation, stage 3](../../Concepts/ModuleOrderOfEvaluation.md), by [modules](../../Constructs/Module.md) that are instantiated (templated) from its schema.
 
 ---
 ### Overloads
@@ -10,7 +10,7 @@
 Declares the deferred execution stage of this Schema.
 
 **Body:**  
-The directive body is a [Deferred Scope](../../Scopes/DeferredScope.md) and is interpreted in that context. Deferred scopes are heavily restricted on operations that mutate module state, they can only use [dubious assignments](../../Operators/DubiousAssignment.md) and can only call [conditional directives](../../Concepts/ConditionalDirective.md).
+The directive body is a [deferred scope](../../Scopes/DeferredScope.md) and is interpreted in that context. Deferred scopes are heavily restricted on operations that mutate module state, they can only use [dubious assignments](../../Operators/DubiousAssignment.md) and can only invoke [conditional directives](../../Concepts/ConditionalDirective.md).
 
 **Example:**
 

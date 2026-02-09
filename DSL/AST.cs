@@ -1,9 +1,8 @@
 // Copyright (C) 2026 ychgen, all rights reserved.
 
 using System.Collections.Immutable;
-using Moonquake.DSL;
 
-namespace Moonquake
+namespace Moonquake.DSL
 {
     public enum ASTType
     {
@@ -62,6 +61,10 @@ namespace Moonquake
     {
     }
 
+    public class StatementAST : AST
+    {
+    }
+
     public class CompoundAST : AST
     {
         public List<AST> Compound = new List<AST>();
@@ -95,7 +98,7 @@ namespace Moonquake
         }
     }
 
-    public class DirectiveAST : AST
+    public class DirectiveAST : StatementAST
     {
         public string DirectiveName = "";
         public CompoundAST Parameters = new CompoundAST();
@@ -117,7 +120,7 @@ namespace Moonquake
         }
     }
 
-    public class FieldAssignmentAST : AST
+    public class FieldAssignmentAST : StatementAST
     {
         public string FieldName = "";
         public ExpressionAST Value = new ExpressionAST();
@@ -133,7 +136,7 @@ namespace Moonquake
         }
     }
 
-    public class FieldAppendmentAST : AST
+    public class FieldAppendmentAST : StatementAST
     {
         public string FieldName = "";
         public ExpressionAST Value = new ExpressionAST();
@@ -149,7 +152,7 @@ namespace Moonquake
         }
     }
 
-    public class FieldErasureAST : AST
+    public class FieldErasureAST : StatementAST
     {
         public string FieldName = "";
         public ExpressionAST Value = new ExpressionAST();
@@ -165,7 +168,7 @@ namespace Moonquake
         }
     }
     
-    public class FieldUnassignmentAST : AST
+    public class FieldUnassignmentAST : StatementAST
     {
         public string FieldName = "";
 
@@ -179,7 +182,7 @@ namespace Moonquake
         }
     }
 
-    public class DubiousAssignmentAST : AST
+    public class DubiousAssignmentAST : StatementAST
     {
         public string FieldName = "";
         public ExpressionAST Value = new ExpressionAST();

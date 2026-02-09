@@ -15,6 +15,9 @@ namespace Moonquake
         public const string Whitespace = " \f\n\r\t\v";
         private static readonly ConcurrentDictionary<string, Regex> PatternCache = new();
 
+        /// <summary>
+        /// Equivalent to std::basic_string<T, Traits>::find_first_not_of(chset, pos)
+        /// </summary>
         public static int FindFirstNotOf(string InStr, string Charset, int Position = 0)
         {
             for (int i = Position; i < InStr.Length; i++)

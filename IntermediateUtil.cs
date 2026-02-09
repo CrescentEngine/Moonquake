@@ -96,6 +96,15 @@ namespace Moonquake
                     break;
                 }
 
+                case ASTType.DubiousAssignment:
+                {
+                    var f = (FieldAssignmentAST)ast;
+                    Indent(depth + 1);
+                    Console.WriteLine($"Dubious Assign: \"{f.FieldName}\"");
+                    PrintAST(f.Value, depth + 2);
+                    break;
+                }
+
                 case ASTType.Array:
                 {
                     var array = (ArrayAST)ast;

@@ -1,8 +1,6 @@
 // Copyright (C) 2026 ychgen, all rights reserved.
 
-using Moonquake.DSL;
-
-namespace Moonquake
+namespace Moonquake.DSL
 {
     public class Parser
     {
