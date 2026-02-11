@@ -6,16 +6,19 @@ namespace Moonquake.DSL.Constructs
     {
         public Schema? Template;
 
-        public Module()
+        public Module(string InName, string InFilepath)
         {
+            Name = InName;
+            Filepath = InFilepath;
+
             // Path
-            NewString(ModuleFieldNames.ORIGIN);
+            NewString(ModuleFieldNames.ORIGIN, Path.GetDirectoryName(Filepath)!);
             // LanguageStandard
             NewConstraint<ModuleLanguageStandard>(ModuleFieldNames.STDCPP, ModuleLanguageStandard.Cpp14);
             // OutputType
             NewConstraint<ModuleOutputType>(ModuleFieldNames.BINTYPE, ModuleOutputType.ConsoleExecutable);
             // OutputName
-            NewString(ModuleFieldNames.BINNAME);
+            NewString(ModuleFieldNames.BINNAME, InName);
             // OutputPath
             NewString(ModuleFieldNames.BINPATH);
             // IntermediatePath
@@ -40,6 +43,8 @@ namespace Moonquake.DSL.Constructs
             NewArray(ModuleFieldNames.PREREQ);
             // IncludePaths
             NewArray(ModuleFieldNames.INCDIRS);
+            // ExposedIncludePaths
+            NewArray(ModuleFieldNames.EXPINCL);
         }
 
         public override ConstructType GetConstructType() => ConstructType.Module;

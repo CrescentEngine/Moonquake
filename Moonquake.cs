@@ -1,5 +1,7 @@
 ﻿// Copyright (C) 2026 ychgen, all rights reserved.
 
+using System.Runtime.InteropServices;
+using Moonquake.CodeGen;
 using Spectre.Console.Cli;
 
 namespace Moonquake
@@ -33,6 +35,20 @@ namespace Moonquake
         
         private static int Main(string[] Arguments)
         {
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Backend.Instance = new VisualStudioBackend();
+            }
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            {
+                Backend.Instance = new MakefileBackend();
+            }
+            else
+            {
+                Console.WriteLine("You're hosted on an unsupported platform. Moonquake only works with Windows and Linux.");
+                return 1;
+            }
+
             CommandApp App = new CommandApp();
             App.Configure(Config =>
             {

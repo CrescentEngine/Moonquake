@@ -21,10 +21,11 @@ namespace Moonquake.Orchestra
         public ModuleOptimization     OptimizationLevel = ModuleOptimization.Off;
         public bool bGenerateSymbols = false;
 
-        public List<string> HeaderFiles      = new();
-        public List<string> TranslationUnits = new();
-        public List<string> IncludePaths     = new();
-        public List<string> Definitions      = new();
+        public List<string> HeaderFiles         = new();
+        public List<string> TranslationUnits    = new();
+        public List<string> ExposedIncludePaths = new();
+        public List<string> IncludePaths        = new();
+        public List<string> Definitions         = new();
 
         /// <summary>
         /// Raw dependencies are direct links against arbitrary libraries outside build system scope.

@@ -6,7 +6,7 @@ namespace Moonquake.DSL
     {
         public static readonly LanguageVersion Invalid = new LanguageVersion(0, 0, 0);
         public static readonly LanguageVersion Initial = new LanguageVersion(1, 0, 0);
-        public static readonly LanguageVersion Latest  = new LanguageVersion(1, 0, 0);
+        public static readonly LanguageVersion Latest  = new LanguageVersion(1, 1, 0);
 
         public int Major = 0, Minor = 0, Patch = 0;
 

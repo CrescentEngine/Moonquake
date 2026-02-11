@@ -1,0 +1,29 @@
+DeclModule("Showcaser")
+{  
+    OutputType       = "ConsoleExecutable";
+    OutputPath       = "{Module.Path}/Binaries/{BuildOrder.Configuration}-{BuildOrder.Platform}-{BuildOrder.Architecture}/{Module.Name}";
+    IntermediatePath = "{Module.Path}/Binaries-Int/{BuildOrder.Configuration}-{BuildOrder.Platform}-{BuildOrder.Architecture}/{Module.Name}";
+    
+    SourceFiles      = [ "Source/Main.cpp" ];
+    # Here we link against StaticLibrary module and add a proper include directory
+    Linkages = [ "StaticLibrary" ];
+    # We don't need to add an IncludePaths entry for StaticLibrary because
+    # StaticLibrary has an ExposedIncludePaths entry automatically providing one.
+
+    When("{BuildOrder.Platform}", "Windows")
+    {
+        OutputType = "WindowedExecutable";
+        Libraries += "user32.lib";
+    };
+    
+    When("{BuildOrder.Configuration}", "Debug")
+    {
+        RuntimeLibraries = "UseDebug";
+        bDebugSymbols = "Yes";
+    };
+    When("{BuildOrder.Configuration}", "Release")
+    {
+        RuntimeLibraries = "UseRelease";
+        Optimization = "Full";
+    };
+};

@@ -130,9 +130,9 @@ namespace Moonquake.Commands
                 SrcVisitor = new Visitor(Filepath);
                 SrcVisitor.Visit(SourceRoot);
             }
-            catch
+            catch (Exception e)
             {
-                Console.WriteLine($"Visitor runtime execution failed, cannot continue build with a corrupt execution world.");
+                Console.WriteLine($"Visitor runtime execution failed, cannot continue build with a corrupt execution world. {e}");
                 return 1;
             }
 
@@ -185,9 +185,9 @@ namespace Moonquake.Commands
             {
                 Graph.Build();
             }
-            catch
+            catch (Exception e)
             {
-                Console.WriteLine($"Build for root '{Settings.Root}' failed.");
+                Console.WriteLine($"Build for root '{Settings.Root}' failed: {e}");
             }
 
             return 0;

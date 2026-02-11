@@ -35,10 +35,8 @@ namespace Moonquake.DSL.Directives
                 throw new Exception($"{Name}() directive error: Attempting to declare a module with name '{ConstructName}' templated from schema '{TemplateName}', but no such Schema construct exists.");
             }
             Constructs.Schema Template = Context.Schemas[TemplateName];
-            Constructs.Module Subject = new Constructs.Module
+            Constructs.Module Subject = new Constructs.Module(ConstructName, Context.Filepath)
             {
-                Name     = ConstructName,
-                Filepath = Context.Filepath,
                 Template = Template
             };
             // We reconstruct the field so it considers its natural path its default value.

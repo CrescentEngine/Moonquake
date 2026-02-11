@@ -1,0 +1,21 @@
+DeclModule("StaticLibrary")
+{  
+    OutputType       = "StaticLibrary";
+    OutputPath       = "{Module.Path}/Binaries/{BuildOrder.Configuration}-{BuildOrder.Platform}-{BuildOrder.Architecture}/{Module.Name}";
+    IntermediatePath = "{Module.Path}/Binaries-Int/{BuildOrder.Configuration}-{BuildOrder.Platform}-{BuildOrder.Architecture}/{Module.Name}";
+    
+    SourceFiles      = [ "Source/StaticLibrary/Showcase.h", "Source/Showcase.cpp" ];
+    # Expose include path for modules linking against/depending on this module so they can include our stuff.
+    ExposedIncludePaths = [ "Source" ];
+
+    When("%Configuration%", "Debug")
+    {
+        RuntimeLibraries = "UseDebug";
+        bDebugSymbols = "Yes";
+    };
+    When("%Configuration%", "Release")
+    {
+        RuntimeLibraries = "UseRelease";
+        Optimization = "Full";
+    };
+};

@@ -14,6 +14,7 @@ namespace Moonquake
         public const string Alnum      = Alpha + Numeric;
         public const string Whitespace = " \f\n\r\t\v";
 
+        private static readonly ConcurrentDictionary<string, Regex> PatternCache = new();
         public static readonly string[] HeaderFileExtensions = [
             ".h", ".hh", ".hpp", ".hxx", ".h++"
         ];
@@ -21,7 +22,28 @@ namespace Moonquake
             ".cpp", ".c", ".cc", ".cxx", ".c++"
         ];
 
-        private static readonly ConcurrentDictionary<string, Regex> PatternCache = new();
+        public static bool IsHeaderFile(string Filepath)
+        {
+            foreach (string HeaderFileExtension in HeaderFileExtensions)
+            {
+                if (Filepath.EndsWith(HeaderFileExtension, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+        public static bool IsTranslationUnit(string Filepath)
+        {
+            foreach (string TranslationUnitExtension in TranslationUnitExtensions)
+            {
+                if (Filepath.EndsWith(TranslationUnitExtension, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
 
         /// <summary>
         /// Equivalent to std::basic_string<T, Traits>::find_first_not_of(chset, pos)

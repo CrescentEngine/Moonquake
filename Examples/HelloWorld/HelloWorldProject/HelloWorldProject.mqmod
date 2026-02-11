@@ -7,33 +7,31 @@ DeclModule("HelloWorldProject")
     LanguageStandard = "Cpp14";
     
     OutputType       = "ConsoleExecutable";
-    OutputName       = "%ModuleName%";
-    OutputPath       = "%ModulePath%/Binaries/%Configuration%-%Platform%-%Architecture%";
-    IntermediatePath = "%ModulePath%/Binaries-Int/%Configuration%-%Platform%-%Architecture%";
+    OutputName       = "{Module.Name}";
+    OutputPath       = "{Module.Path}/Binaries/{BuildOrder.Configuration}-{BuildOrder.Platform}-{BuildOrder.Architecture}";
+    IntermediatePath = "{Module.Path}/Binaries-Int/{BuildOrder.Configuration}-{BuildOrder.Platform}-{BuildOrder.Architecture}";
 
     # RootSourcePaths captures all C/C++ headers and translation units in the given dirs and their subdirs.
     RootSourcePaths = [ "Source" ];
     # Alternatively you could add to individual sources array.
     # SourceFiles += "Source/Main.cpp";
 
-    # Change the 2nd 'No' to 'Yes' if you want a message box instead of console message for Windows.
-    When("Yes", "Yes")
+    When("{BuildOrder.Platform}", "Windows")
     {
-        When("%Platform%", "Windows")
-        {
-            # Notify source code.
-            Definitions += "HELLOWORLD_USE_WIN32_MESSAGEBOX";
-            # For Windows, WindowedExecutable changes the subsystem to WINDOWS from CONSOLE so WinMain will be used.
-            OutputType = "WindowedExecutable"; # Field reassignment is possible.
-        };
+        # Notify source code.
+        Definitions += "HELLOWORLD_USE_WIN32_MESSAGEBOX";
+        # For Windows, WindowedExecutable changes the subsystem to WINDOWS from CONSOLE so WinMain will be used.
+        OutputType = "WindowedExecutable"; # Field reassignment is possible.
+
+        Libraries += "user32.lib";
     };
 
-    When("%Configuration%", "Debug")
+    When("{BuildOrder.Configuration}", "Debug")
     {
         RuntimeLibraries = "UseDebug";
         bDebugSymbols = "Yes";
     };
-    When("%Configuration%", "Release")
+    When("{BuildOrder.Configuration}", "Release")
     {
         RuntimeLibraries = "UseRelease";
         # All possible Optimization values:

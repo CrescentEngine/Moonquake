@@ -97,11 +97,13 @@ namespace Moonquake.DSL
                 {
                     Constructs.Module Mod = (Constructs.Module) Context.Frame.Construct;
 
-                    Builder.Replace("%ModuleName%", Mod.Name);
-                    Builder.Replace("%ModulePath%", Mod.Str("Path"));
-                    Builder.Replace("%Configuration%", Moonquake.BuildOrder.Configuration);
-                    Builder.Replace("%Platform%", Moonquake.BuildOrder.Platform.ToString());
-                    Builder.Replace("%Architecture%", Moonquake.BuildOrder.Architecture.ToString());
+                    // TODO: Actually implement proper replacements.
+                    // These are quick hacks to get our Examples going.
+                    Builder.Replace("{Module.Name}", Mod.Name);
+                    Builder.Replace("{Module.Path}", Mod.Str("Path"));
+                    Builder.Replace("{BuildOrder.Configuration}", Moonquake.BuildOrder.Configuration);
+                    Builder.Replace("{BuildOrder.Platform}", Moonquake.BuildOrder.Platform.ToString());
+                    Builder.Replace("{BuildOrder.Architecture}", Moonquake.BuildOrder.Architecture.ToString());
                     
                     break;
                 }

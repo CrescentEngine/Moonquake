@@ -1,0 +1,11 @@
+DeclVersion("1.1.0");
+DeclRoot("HelloStaticLibrary")
+{
+    Configurations = [ "Debug", "Release" ];
+    Architectures  = [ "x64", "ARM64" ];
+    Platforms      = [ "Windows", "Linux" ];
+    Modules        = [ "StaticLibrary", "Showcaser" ];
+    MainModule     =   "Showcaser";
+};
+Include("StaticLibrary");
+Include("Showcaser");

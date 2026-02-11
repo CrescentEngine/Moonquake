@@ -20,5 +20,6 @@ namespace Moonquake.DSL.Constructs
         public const string LIBLINK = "Libraries";
         public const string PREREQ  = "DependsOn";
         public const string INCDIRS = "IncludePaths";
+        public const string EXPINCL = "ExposedIncludePaths";
     }
 }

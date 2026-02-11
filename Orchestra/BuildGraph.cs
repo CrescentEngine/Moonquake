@@ -1,5 +1,7 @@
 // Copyright (C) 2026 ychgen, all rights reserved.
 
+using Moonquake.CodeGen;
+
 namespace Moonquake.Orchestra
 {
     public class BuildGraph
@@ -24,11 +26,28 @@ namespace Moonquake.Orchestra
 
         private void Build(BuildModule Module)
         {
-            Console.WriteLine($"[Moonquake] Building module '{Module.Name}'...");
+            Console.WriteLine($"[MQ] Building module '{Module.Name}'...");
+            if (!Directory.Exists(Module.ObjectPath))
+            {
+                Directory.CreateDirectory(Module.ObjectPath);
+            }
+            List<string> ObjectFiles = new();
             for (int i = 0; i < Module.TranslationUnits.Count; i++)
             {
                 string TranslationUnit = Module.TranslationUnits[i];
-                Console.WriteLine($"[{i+1} of {Module.TranslationUnits.Count}] {Path.GetFileName(TranslationUnit)}");
+                string ObjectFile = Path.Combine(Module.ObjectPath, Path.GetFileNameWithoutExtension(TranslationUnit) + ".obj");
+                ObjectFiles.Add(ObjectFile);
+
+                Console.WriteLine($"[{i+1}/{Module.TranslationUnits.Count}] {Path.GetFileName(TranslationUnit)}");
+                if (!Backend.Instance.InvokeCompiler(TranslationUnit, ObjectFile, Module))
+                {
+                    throw new Exception($"Building of module '{Module.Name}' failed, compiler compilation error.");
+                }
+            }
+            Console.WriteLine($"[MQ] Linking final {(Module.OutputType == ModuleOutputType.ConsoleExecutable || Module.OutputType == ModuleOutputType.WindowedExecutable ? "executable" : "binary")}...");
+            if (!Backend.Instance.InvokeLinker(ObjectFiles, Module))
+            {
+                throw new Exception($"Building of module '{Module.Name}' failed, linker linkage error.");
             }
         }
         
@@ -66,6 +85,6 @@ namespace Moonquake.Orchestra
             }
 
             return Sorted;
-        }    
+        }
     }
 }

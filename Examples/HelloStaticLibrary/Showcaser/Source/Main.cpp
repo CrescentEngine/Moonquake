@@ -1,6 +1,6 @@
-extern void Print();
+#include "StaticLibrary/Showcase.h"
 
-#ifdef HELLOWORLD_USE_WIN32_MESSAGEBOX
+#ifdef _WIN32
 #include <Windows.h>
 int CALLBACK WinMain
 (
@@ -11,7 +11,8 @@ int CALLBACK WinMain
 )
 #else
 int main()
-#endif // HELLOWORLD_USE_WIN32_MESSAGEBOX
+#endif // _WIN32
 {
-    Print();
+    Showcase();
 }
+

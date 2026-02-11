@@ -20,7 +20,12 @@ namespace Moonquake.Orchestra
                 {
                     throw new Exception($"BuildFinalizer.FinalizeRoot() error: Module '{ModuleName}' specified as apart of Root '{InRoot.Name}' was never declared within the execution context.");
                 }
-                Final.Modules[ModuleName] = FinalizeModule(ExecContext, InRoot, Module, []);
+                // Check if something else finalized it (i.e. during FinalizeModule if one is a dep/link it will finalize there)
+                if (Final.Modules.ContainsKey(ModuleName))
+                {
+                    continue;
+                }
+                FinalizeModule(ExecContext, Final, InRoot, Module, []);
             }
             string MainModuleName = InRoot.Str(RootFieldNames.ENTRYMOD);
             if (MainModuleName == "")
@@ -55,7 +60,7 @@ namespace Moonquake.Orchestra
             return Final;
         }
 
-        private static BuildModule FinalizeModule(DSL.ExecutionContext ExecContext, Root InRoot, Module InModule, List<string> InDependencyDenyList)
+        private static BuildModule FinalizeModule(DSL.ExecutionContext ExecContext, BuildRoot InBuildRoot, Root InRoot, Module InModule, List<string> InDependencyDenyList)
         {
             if (InDependencyDenyList.Contains(InModule.Name))
             {
@@ -85,24 +90,14 @@ namespace Moonquake.Orchestra
             {
                 foreach (string File in Directory.GetFiles(Dir))
                 {
-                    foreach (string HeaderExtension in StringUtil.HeaderFileExtensions)
+                    if (StringUtil.IsHeaderFile(File))
                     {
-                        if (File.EndsWith(HeaderExtension))
-                        {
-                            Final.HeaderFiles.Add(File);
-                            goto NextFile;
-                        }
+                        Final.HeaderFiles.Add(File);
                     }
-                    foreach (string TranslationUnitExtension in StringUtil.TranslationUnitExtensions)
+                    else if (StringUtil.IsTranslationUnit(File))
                     {
-                        if (File.EndsWith(TranslationUnitExtension))
-                        {
-                            Final.TranslationUnits.Add(File);
-                            goto NextFile;
-                        }
+                        Final.TranslationUnits.Add(File);
                     }
-                NextFile:
-                    continue;
                 }
                 foreach (string Subdir in Directory.GetDirectories(Dir))
                 {
@@ -114,8 +109,30 @@ namespace Moonquake.Orchestra
             {
                 DoFilesIt(Path.GetFullPath(RootSourcePath));
             }
+            foreach (string SourceFile in InModule.Arr(ModuleFieldNames.SRCS).Distinct())
+            {
+                if (!File.Exists(SourceFile))
+                {
+                    throw new Exception($"BuildFinalizer.FinalizeModule() error: Module '{InModule.Name}' has explicitly provided source file '{SourceFile}', but no such file exists on disk.");
+                }
+                string ResolvedFile = Path.GetFullPath(SourceFile);
+                if (StringUtil.IsHeaderFile(ResolvedFile))
+                {
+                    Final.HeaderFiles.Add(ResolvedFile);
+                }
+                else if (StringUtil.IsTranslationUnit(ResolvedFile))
+                {
+                    Final.TranslationUnits.Add(ResolvedFile);
+                }
+                else
+                {
+                    throw new Exception($"BuildFinalizer.FinalizeModule() error: Module '{InModule.Name}' has explicitly provided source file '{SourceFile}', but this file is neither a header or a translation unit.");
+                }
+            }
 
+            Final.ExposedIncludePaths = InModule.Arr(ModuleFieldNames.EXPINCL).Select(Path.GetFullPath).Distinct().ToList();
             Final.IncludePaths = InModule.Arr(ModuleFieldNames.INCDIRS).Select(Path.GetFullPath).Distinct().ToList();
+            
             foreach (string Definition in InModule.Arr(ModuleFieldNames.DEFINES).Distinct())
             {
                 int EqualsPos = Definition.IndexOf('=');
@@ -141,10 +158,11 @@ namespace Moonquake.Orchestra
                 }
 
                 InDependencyDenyList.Add(InModule.Name);
-                    BuildModule Module = FinalizeModule(ExecContext, InRoot, Mod, InDependencyDenyList);
+                    BuildModule Module = FinalizeModule(ExecContext, InBuildRoot, InRoot, Mod, InDependencyDenyList);
                 InDependencyDenyList.RemoveAt(InDependencyDenyList.Count - 1);
 
                 Final.Linkages[Module.Name] = Module;
+                InBuildRoot.Modules[Module.Name] = Module;
             }
             Final.Dependencies = Final.Linkages; // Carry over linkages (they are dependencies as well)
             foreach (string Dependency in InModule.Arr(ModuleFieldNames.PREREQ).Distinct())
@@ -165,13 +183,21 @@ namespace Moonquake.Orchestra
                 }
 
                 InDependencyDenyList.Add(InModule.Name);
-                    BuildModule Module = FinalizeModule(ExecContext, InRoot, Mod, InDependencyDenyList);
+                    BuildModule Module = FinalizeModule(ExecContext, InBuildRoot, InRoot, Mod, InDependencyDenyList);
                 InDependencyDenyList.RemoveAt(InDependencyDenyList.Count - 1);
 
                 Final.Dependencies[Module.Name] = Module;
+                InBuildRoot.Modules[Module.Name] = Module;
+            }
+
+            // Bring over our dependencies' exposed InclPaths in our IncludePaths scope.
+            foreach (BuildModule Dependency in Final.Dependencies.Values)
+            {
+                Final.IncludePaths.AddRange(Dependency.ExposedIncludePaths);
             }
 
             Directory.SetCurrentDirectory(PrevWorkingDir);
+            InBuildRoot.Modules[InModule.Name] = Final;
             return Final;
         }
     }
