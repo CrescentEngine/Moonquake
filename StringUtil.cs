@@ -13,6 +13,14 @@ namespace Moonquake
         public const string Alpha      = LowerAlpha + UpperAlpha;
         public const string Alnum      = Alpha + Numeric;
         public const string Whitespace = " \f\n\r\t\v";
+
+        public static readonly string[] HeaderFileExtensions = [
+            ".h", ".hh", ".hpp", ".hxx", ".h++"
+        ];
+        public static readonly string[] TranslationUnitExtensions = [
+            ".cpp", ".c", ".cc", ".cxx", ".c++"
+        ];
+
         private static readonly ConcurrentDictionary<string, Regex> PatternCache = new();
 
         /// <summary>

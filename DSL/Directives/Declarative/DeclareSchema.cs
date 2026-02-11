@@ -21,8 +21,9 @@ namespace Moonquake.DSL.Directives
             }
             Constructs.Schema Subject = new Constructs.Schema
             {
-                Name = ConstructName,
-                Body = AST.Body
+                Name     = ConstructName,
+                Filepath = Context.Filepath,
+                Body     = AST.Body
             };
 
             Context.PushFrame(EvaluationContext.SchemaScope, Subject);

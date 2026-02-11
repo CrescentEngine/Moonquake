@@ -44,5 +44,22 @@ namespace Moonquake.DSL
             }
             FrameStack.Pop();
         }
+
+        public void ValidateRootReferences(string NameOfRootToValidate)
+        {
+            Constructs.Root? Root;
+            if (!Roots.TryGetValue(NameOfRootToValidate, out Root))
+            {
+                throw new Exception($"Validation of Root '{NameOfRootToValidate}' was requested, but no such root even exists.");
+            }
+
+            foreach (string ModuleName in Root.Arr(Constructs.RootFieldNames.MODULES))
+            {
+                if (!Modules.ContainsKey(ModuleName))
+                {
+                    throw new Exception($"Validation of Root '{NameOfRootToValidate}' failed, at least one of the modules specified in {NameOfRootToValidate}.Modules, which is '{ModuleName}', was never declared.");
+                }
+            }
+        }
     }
 }

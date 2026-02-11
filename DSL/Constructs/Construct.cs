@@ -254,6 +254,7 @@ namespace Moonquake.DSL.Constructs
     public abstract class Construct
     {
         public string Name = "";
+        public string Filepath = "";
         public Dictionary<string, ConstructField> Fields = new();
 
         public ConstructField Field(string FieldName)

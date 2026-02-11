@@ -1,9 +1,7 @@
-#include <iostream>
+extern void Print();
+
 
 #ifdef HELLOWORLD_USE_WIN32_MESSAGEBOX
-
-#include <Windows.h>
-
 int CALLBACK WinMain
 (
     _In_     HINSTANCE hInstance,
@@ -11,15 +9,9 @@ int CALLBACK WinMain
     _In_     LPSTR     lpCmdLine,
     _In_     int       nCmdShow
 )
-{
-    MessageBox(NULL, TEXT("Hello, world!"), TEXT("HelloWorldProject"), MB_OK);
-}
-
 #else
-
 int main()
-{
-    std::cout << "Hello, world!\n";
-}
-
 #endif // HELLOWORLD_USE_WIN32_MESSAGEBOX
+{
+    Print();
+}

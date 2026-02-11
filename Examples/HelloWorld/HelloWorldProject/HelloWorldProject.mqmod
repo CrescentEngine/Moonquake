@@ -14,15 +14,15 @@ DeclModule("HelloWorldProject")
     # RootSourcePaths captures all C/C++ headers and translation units in the given dirs and their subdirs.
     RootSourcePaths = [ "Source" ];
     # Alternatively you could add to individual sources array.
-    # Sources += "Source/Main.cpp";
+    # SourceFiles += "Source/Main.cpp";
 
     # Change the 2nd 'No' to 'Yes' if you want a message box instead of console message for Windows.
     When("Yes", "Yes")
     {
         When("%Platform%", "Windows")
         {
-            # Special DefineGlobalMacro for C/C++ projects.
-            DefineGlobalMacro("HELLOWORLD_USE_WIN32_MESSAGEBOX");
+            # Notify source code.
+            Definitions += "HELLOWORLD_USE_WIN32_MESSAGEBOX";
             # For Windows, WindowedExecutable changes the subsystem to WINDOWS from CONSOLE so WinMain will be used.
             OutputType = "WindowedExecutable"; # Field reassignment is possible.
         };

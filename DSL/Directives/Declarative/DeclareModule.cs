@@ -38,14 +38,23 @@ namespace Moonquake.DSL.Directives
             Constructs.Module Subject = new Constructs.Module
             {
                 Name     = ConstructName,
+                Filepath = Context.Filepath,
                 Template = Template
             };
+            // We reconstruct the field so it considers its natural path its default value.
+            // Dubious assignment validity is debatable but we make it work currently.
+            Subject.Fields[Constructs.ModuleFieldNames.ORIGIN] = new Constructs.StringField(
+                Path.GetDirectoryName(Context.Filepath.TrimEnd(Path.DirectorySeparatorChar))!
+            );
 
-            Context.PushFrame(EvaluationContext.SchemaScope, Subject);
+            if (Template.Body is not null)
             {
-                Context.Visit(Template.Body!);
+                Context.PushFrame(EvaluationContext.SchemaScope, Subject);
+                {
+                    Context.Visit(Template.Body!);
+                }
+                Context.PopFrame();
             }
-            Context.PopFrame();
             Context.PushFrame(EvaluationContext.ModuleScope, Subject);
             {
                 Context.Visit(AST.Body!);

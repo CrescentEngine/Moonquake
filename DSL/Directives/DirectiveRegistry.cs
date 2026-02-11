@@ -28,6 +28,7 @@ namespace Moonquake.DSL.Directives
             { DirectiveNames.FIELDS_PROTECT,  new ProtectAllFieldsDirective()  },
         };
 
+        public static IReadOnlyDictionary<string, Directive> All => Registry;
         public static bool TryGetDirective(string Name, out Directive? Dir) => Registry.TryGetValue(Name, out Dir);
     }
 }

@@ -6,11 +6,11 @@ namespace Moonquake.DSL.Constructs
     {
         public Root()
         {
-            NewArray("Configurations", [ "Debug", "Release" ]);
-            NewArray("Architectures", ["x64"]);
-            NewArray("Platforms", [ Moonquake.BuildOrder.Platform.ToString() ]);
-            NewArray("Modules");
-            NewString("MainModule");
+            NewArray(RootFieldNames.CONFIGS, [ "Debug", "Release" ]);
+            NewArray(RootFieldNames.ARCHS, ["x64"]);
+            NewArray(RootFieldNames.PLATFORMS, [ Moonquake.BuildOrder.Platform.ToString() ]);
+            NewArray(RootFieldNames.MODULES);
+            NewString(RootFieldNames.ENTRYMOD);
         }
 
         public override ConstructType GetConstructType() => ConstructType.Root;

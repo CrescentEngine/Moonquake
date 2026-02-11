@@ -21,7 +21,8 @@ namespace Moonquake.DSL.Directives
             }
             Constructs.Root Subject = new Constructs.Root
             {
-                Name = ConstructName
+                Name = ConstructName,
+                Filepath = Context.Filepath
             };
 
             Context.PushFrame(EvaluationContext.RootScope, Subject);

@@ -45,8 +45,12 @@ namespace Moonquake.DSL.Directives
             
             string PrevFilepath = Context.Filepath;
             Context.Filepath = ToInclude;
+            // Switch wdir so everything resolves relative to that description file nicely.
+            Directory.SetCurrentDirectory(Path.GetDirectoryName(ToInclude)!);
             Context.Visit(InclParser.Parse());
             Context.Filepath = PrevFilepath;
+            // Back to the original path.
+            Directory.SetCurrentDirectory(Path.GetDirectoryName(PrevFilepath)!);
         }
     }
 }

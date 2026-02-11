@@ -2,53 +2,44 @@
 
 namespace Moonquake.DSL.Constructs
 {
-    public enum ModuleLanguageStandard
-    {
-        Cpp11, // NOTE: With MSVC, Cpp14 will be used! It doesn't support explicit C++11 mode.
-        Cpp14,
-        Cpp17,
-        Cpp20,
-        Cpp23
-    }
-    public enum ModuleOutputType
-    {
-        ConsoleExecutable,
-        WindowedExecutable,
-        StaticLibrary,
-        DynamicLibrary
-    }
-    public enum ModuleRuntimeLibraries
-    {
-        UseDebug,
-        UseRelease
-    }
-    public enum ModuleOptimization
-    {
-        Off,
-        Balanced,
-        Smallest,
-        Fastest,
-        Full
-    }
-
     public class Module : Construct
     {
         public Schema? Template;
 
         public Module()
         {
-            NewString("Path");
-            NewConstraint<ModuleLanguageStandard>("LanguageStandard", ModuleLanguageStandard.Cpp14);
-            NewConstraint<ModuleOutputType>("OutputType", ModuleOutputType.ConsoleExecutable);
-            NewString("OutputName");
-            NewString("OutputPath");
-            NewString("IntermediatePath");
-            NewArray("RootSourcePaths");
-            NewArray("Sources");
-            NewArray("GlobalMacros");
-            NewConstraint<ModuleRuntimeLibraries>("RuntimeLibraries", ModuleRuntimeLibraries.UseDebug);
-            NewConstraint<ModuleOptimization>("Optimization", ModuleOptimization.Off);
-            NewBoolean("bDebugSymbols");
+            // Path
+            NewString(ModuleFieldNames.ORIGIN);
+            // LanguageStandard
+            NewConstraint<ModuleLanguageStandard>(ModuleFieldNames.STDCPP, ModuleLanguageStandard.Cpp14);
+            // OutputType
+            NewConstraint<ModuleOutputType>(ModuleFieldNames.BINTYPE, ModuleOutputType.ConsoleExecutable);
+            // OutputName
+            NewString(ModuleFieldNames.BINNAME);
+            // OutputPath
+            NewString(ModuleFieldNames.BINPATH);
+            // IntermediatePath
+            NewString(ModuleFieldNames.OBJPATH);
+            // RootSourcePaths
+            NewArray(ModuleFieldNames.SRCDIRS);
+            // SourceFiles
+            NewArray(ModuleFieldNames.SRCS);
+            // Definitions
+            NewArray(ModuleFieldNames.DEFINES);
+            // RuntimeLibraries
+            NewConstraint<ModuleRuntimeLibraries>(ModuleFieldNames.RTLIBS, ModuleRuntimeLibraries.UseDebug);
+            // Optimization
+            NewConstraint<ModuleOptimization>(ModuleFieldNames.OLEVEL, ModuleOptimization.Off);
+            // bGenerateSymbols
+            NewBoolean(ModuleFieldNames.SYMBOLS);
+            // Linkages
+            NewArray(ModuleFieldNames.LINKS);
+            // LibLinkages
+            NewArray(ModuleFieldNames.LIBLINK);
+            // DependsOn
+            NewArray(ModuleFieldNames.PREREQ);
+            // IncludePaths
+            NewArray(ModuleFieldNames.INCDIRS);
         }
 
         public override ConstructType GetConstructType() => ConstructType.Module;
