@@ -33,6 +33,7 @@ namespace Moonquake.Commands
         public override int Execute(CommandContext Context, BuildSettings Settings, CancellationToken CancellationToken)
         {
             Moonquake.BuildOrder.Configuration = Settings.Config;
+            Moonquake.BuildOrder.Type = BuildType.Build;
 
             switch (RuntimeInformation.OSArchitecture)
             {
@@ -72,59 +73,11 @@ namespace Moonquake.Commands
                 return 0;
             }
 
-            string Filepath = Settings.Input;
-            if (Settings.bDirectory)
-            {
-                if (!Directory.Exists(Filepath))
-                {
-                    Console.WriteLine($"No such directory as '{Filepath}' exists.");
-                    return 1;
-                }
-                try
-                {
-                    Filepath = Path.Combine(Filepath, Path.GetFileName(Filepath.TrimEnd(Path.DirectorySeparatorChar))) + ".mqroot";
-                }
-                catch
-                {
-                    Console.WriteLine($"Couldn't construct eventual path from given bDirectory path input '{Settings.Input}'.");
-                    return 1;
-                }
-            }
-            if (!File.Exists(Filepath))
-            {
-                Console.WriteLine($"Description file '{Filepath}' doesn't exist.");
-                return 1;
-            }
-            
-            string FileContent;
-            try
-            {
-                FileContent = File.ReadAllText(Filepath);
-            }
-            catch
-            {
-                Console.WriteLine($"Failed to read description file '{Filepath}'.");
-                return 1;
-            }
+            string Filepath;
+            CompoundAST? SourceRoot = DescriptionFileInputHelper.Help(Settings.Input, Settings.bDirectory, out Filepath);
+            if (SourceRoot is null) return 1;
 
-            // Get absolute path.
-            Filepath = Path.GetFullPath(Filepath);
-            // Switch working directory.
-            Directory.SetCurrentDirectory(Path.GetDirectoryName(Filepath)!);
-
-            Parser SrcParser;
-            CompoundAST SourceRoot;
             Visitor SrcVisitor;
-            try
-            {
-                SrcParser = new Parser(new DSL.Lexer(Filepath, FileContent));
-                SourceRoot = SrcParser.Parse();
-            }
-            catch
-            {
-                Console.WriteLine($"Parser failed, cannot continue execution without a valid source of truth.");
-                return 1;
-            }
             try
             {
                 SrcVisitor = new Visitor(Filepath);
@@ -156,16 +109,6 @@ namespace Moonquake.Commands
             if (!RootToBuild.Arr(RootFieldNames.ARCHS).Contains(Moonquake.BuildOrder.Architecture.ToString()))
             {
                 Console.WriteLine($"Root to build '{Settings.Root}' doesn't support architecture '{Moonquake.BuildOrder.Architecture}'.");
-                return 1;
-            }
-
-            try
-            {
-                SrcVisitor.Context.ValidateRootReferences(Settings.Root);
-            }
-            catch
-            {
-                Console.WriteLine($"References of root to build '{Settings.Root}' could not be validated.");
                 return 1;
             }
 

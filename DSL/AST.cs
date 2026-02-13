@@ -51,6 +51,11 @@ namespace Moonquake.DSL
         {
             return ((T) this);
         }
+        public virtual AST Clone()
+        {
+            // Base AST only copies Type and SrcInfo shallowly
+            return (AST) MemberwiseClone();
+        }
     }
 
     public class NoopAST : AST
@@ -81,6 +86,16 @@ namespace Moonquake.DSL
         {
             Compound = InCompound;
         }
+
+        public override AST Clone()
+        {
+            CompoundAST Clone = new CompoundAST
+            {
+                SrcInfo = SrcInfo, // shallow copy; deep copy if needed
+                Compound = Compound.Select(n => n.Clone()).ToList()
+            };
+            return Clone;
+        }
     }
 
     public class StringAST : ExpressionAST
@@ -95,6 +110,15 @@ namespace Moonquake.DSL
         public StringAST(string InLiteral) : this()
         {
             Literal = InLiteral;
+        }
+        public override AST Clone()
+        {
+            return new StringAST
+            {
+                Literal = Literal,
+                Resolved = Resolved,
+                SrcInfo = SrcInfo
+            };
         }
     }
 
@@ -134,6 +158,15 @@ namespace Moonquake.DSL
             FieldName = InFieldName;
             Value = InValue;
         }
+        public override AST Clone()
+        {
+            return new FieldAssignmentAST
+            {
+                FieldName = FieldName,
+                Value = (ExpressionAST) Value.Clone(),
+                SrcInfo = SrcInfo
+            };
+        }
     }
 
     public class FieldAppendmentAST : StatementAST
@@ -149,6 +182,15 @@ namespace Moonquake.DSL
         {
             FieldName = InFieldName;
             Value = InValue;
+        }
+        public override AST Clone()
+        {
+            return new FieldAppendmentAST
+            {
+                FieldName = FieldName,
+                Value = (ExpressionAST) Value.Clone(),
+                SrcInfo = SrcInfo
+            };
         }
     }
 
@@ -166,6 +208,15 @@ namespace Moonquake.DSL
             FieldName = InFieldName;
             Value = InValue;
         }
+        public override AST Clone()
+        {
+            return new FieldErasureAST
+            {
+                FieldName = FieldName,
+                Value = (ExpressionAST) Value.Clone(),
+                SrcInfo = SrcInfo
+            };
+        }
     }
     
     public class FieldUnassignmentAST : StatementAST
@@ -179,6 +230,14 @@ namespace Moonquake.DSL
         public FieldUnassignmentAST(string InFieldName) : this()
         {
             FieldName = InFieldName;
+        }
+        public override AST Clone()
+        {
+            return new FieldUnassignmentAST
+            {
+                FieldName = FieldName,
+                SrcInfo = SrcInfo
+            };
         }
     }
 
@@ -195,6 +254,15 @@ namespace Moonquake.DSL
         {
             FieldName = InFieldName;
             Value = InValue;
+        }
+        public override AST Clone()
+        {
+            return new DubiousAssignmentAST
+            {
+                FieldName = FieldName,
+                Value = (ExpressionAST) Value.Clone(),
+                SrcInfo = SrcInfo
+            };
         }
     }
 
@@ -233,6 +301,14 @@ namespace Moonquake.DSL
                 ArrayValue[i] = Value[i].Resolved;
             }
             return ArrayValue;
+        }
+        public override AST Clone()
+        {
+            return new ArrayAST
+            {
+                Value = Value.Select(s => (StringAST)s.Clone()).ToList(),
+                SrcInfo = SrcInfo
+            };
         }
     }
 }

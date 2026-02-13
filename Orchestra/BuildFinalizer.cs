@@ -6,13 +6,34 @@ namespace Moonquake.Orchestra
 {
     public static class BuildFinalizer
     {
+        public static BuildRoot FinalizeRoot(DSL.ExecutionContext ExecContext, string InRootName, bool bValidateRootReferences = true)
+        {
+            Root? root;
+            if (!ExecContext.Roots.TryGetValue(InRootName, out root))
+            {
+                throw new Exception($"BuildFinalizer.FinalizeRoot(): Trying to finalizer root by name '{InRootName}', but no such root exists.");
+            }
+            if (bValidateRootReferences)
+            {
+                ExecContext.ValidateRootReferences(InRootName);
+            }
+            return FinalizeRoot(ExecContext, root);
+        }
+
         public static BuildRoot FinalizeRoot(DSL.ExecutionContext ExecContext, Root InRoot)
         {
             string PrevWorkingDir = Directory.GetCurrentDirectory();
             Directory.SetCurrentDirectory(Path.GetDirectoryName(InRoot.Filepath.TrimEnd(Path.DirectorySeparatorChar))!);
 
-            BuildRoot Final = new BuildRoot();
-            Final.Name = InRoot.Name;
+            BuildRoot Final = new BuildRoot
+            {
+                Name = InRoot.Name,
+                RootPath = InRoot.Str(RootFieldNames.ORIGIN),
+                Configurations = InRoot.Arr(RootFieldNames.CONFIGS).Distinct().ToArray(),
+                Architectures = InRoot.Arr(RootFieldNames.ARCHS).Distinct().Select(n => (Architectures)Enum.Parse(typeof(Architectures), n)).ToArray(),
+                Platforms = InRoot.Arr(RootFieldNames.PLATFORMS).Distinct().Select(n => (Platforms)Enum.Parse(typeof(Platforms), n)).ToArray()
+            };
+
             foreach (string ModuleName in InRoot.Arr(RootFieldNames.MODULES))
             {
                 Module? Module;

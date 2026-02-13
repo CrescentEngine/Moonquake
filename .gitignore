@@ -28,6 +28,12 @@ bld/
 
 # Examples output dirs
 Binaries*/
+# Examples generated proj files
+Examples/**/*.sln
+Examples/**/*.vcxproj
+Examples/**/*.filters
+Examples/**/*.user
+Examples/**/*.log
 
 # .NET Core
 project.lock.json

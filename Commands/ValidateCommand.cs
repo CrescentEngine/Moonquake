@@ -1,6 +1,7 @@
 // Copyright (C) 2026 ychgen, all rights reserved.
 
 using System.ComponentModel;
+using Moonquake.DSL;
 using Spectre.Console.Cli;
 
 namespace Moonquake.Commands
@@ -22,60 +23,28 @@ namespace Moonquake.Commands
 
     class ValidateCommand : Command<ValidateSettings>
     {
-        public override int Execute(CommandContext context, ValidateSettings settings, CancellationToken cancellationToken)
+        public override int Execute(CommandContext Context, ValidateSettings Settings, CancellationToken CancellationToken)
         {
-            Moonquake.BuildOrder.bValidationMode  = true;
-            Moonquake.BuildOrder.bDisableIncludes = settings.bIncludeDisable;
+            Moonquake.BuildOrder.Type = BuildType.Validate;
+            Moonquake.BuildOrder.bDisableIncludes = Settings.bIncludeDisable;
 
-            string Filepath = settings.Input;
-            if (settings.bDirectory)
-            {
-                if (!Directory.Exists(Filepath))
-                {
-                    Console.WriteLine($"No such directory as '{Filepath}' exists.");
-                    return 1;
-                }
-                try
-                {
-                    Filepath = Path.Combine(Filepath, Path.GetFileName(Filepath.TrimEnd(Path.DirectorySeparatorChar))) + ".mqroot";
-                }
-                catch
-                {
-                    Console.WriteLine($"Couldn't construct eventual path from given bDirectory path input '{settings.Input}'.");
-                    return 1;
-                }
-            }
-            if (!File.Exists(Filepath))
-            {
-                Console.WriteLine($"Description file '{Filepath}' doesn't exist.");
-                return 1;
-            }
-            
-            string FileContent;
+            string Filepath;
+            CompoundAST? SourceRoot = DescriptionFileInputHelper.Help(Settings.Input, Settings.bDirectory, out Filepath);
+            if (SourceRoot is null) return 1;
+
+            Visitor SrcVisitor;
             try
             {
-                FileContent = File.ReadAllText(Filepath);
+                SrcVisitor = new Visitor(Filepath);
+                SrcVisitor.Visit(SourceRoot);
             }
-            catch
+            catch (Exception e)
             {
-                Console.WriteLine($"Failed to read description file '{Filepath}'.");
+                Console.WriteLine($"Visitor runtime execution failed, this description file is not valid. {e}");
                 return 1;
             }
-
-            // Get absolute path.
-            Filepath = Path.GetFullPath(Filepath);
-            // Switch working directory.
-            Directory.SetCurrentDirectory(Path.GetDirectoryName(Filepath)!);
-
-            DSL.Parser  Parser  = new DSL.Parser(new DSL.Lexer(Filepath, FileContent));
-            DSL.Visitor Visitor = new DSL.Visitor(Filepath);
-
-            DSL.CompoundAST SourceRoot = Parser.Parse();
-            Visitor.Visit(SourceRoot);
             
-            Console.WriteLine($"This description file is valid (with includes {(settings.bIncludeDisable ? "disabled" : "enabled")}).");
-            Moonquake.BuildOrder.bValidationMode = false;
-            Moonquake.BuildOrder.bDisableIncludes = false;
+            Console.WriteLine($"This description file is valid (with includes {(Settings.bIncludeDisable ? "disabled" : "enabled")}).");
             return 0;
         }
     }

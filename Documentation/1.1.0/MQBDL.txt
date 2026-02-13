@@ -3,4 +3,4 @@ Copyright (C) 2026 ychgen, all rights reserved.
 The Moonquake Build Description Language, MQBDL;
 alias:
 The Moonquake Domain Specific Language, MQDSL.
-Version 1.0.0 Specification
+Version 1.1.0 Specification

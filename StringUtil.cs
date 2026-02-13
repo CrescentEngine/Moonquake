@@ -60,6 +60,10 @@ namespace Moonquake
             return -1;
         }
 
+        public static void ClearPatternCache()
+        {
+            PatternCache.Clear();
+        }
         public static bool IsMatch(string Str, string Pattern)
         {
             Regex Rgx = PatternCache.GetOrAdd(Pattern, p =>

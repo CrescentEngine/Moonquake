@@ -1,7 +1,7 @@
 ﻿// Copyright (C) 2026 ychgen, all rights reserved.
 
 using System.Runtime.InteropServices;
-using Moonquake.CodeGen;
+using Moonquake.Toolchain;
 using Spectre.Console.Cli;
 
 namespace Moonquake
@@ -18,6 +18,12 @@ namespace Moonquake
         Linux
     }
 
+    public enum BuildType
+    {
+        Build,
+        Validate,
+        Generate
+    }
     public struct BuildOrder
     {
         public string Root;
@@ -25,8 +31,23 @@ namespace Moonquake
         public Architectures Architecture;
         public Platforms Platform;
 
-        public bool bValidationMode;
+        public BuildType Type;
         public bool bDisableIncludes;
+        public string? RootGenerateTarget;
+
+        public BuildOrder Clone()
+        {
+            return new BuildOrder
+            {
+                Root = Root,
+                Configuration = Configuration,
+                Architecture = Architecture,
+                Platform = Platform,
+                Type = Type,
+                bDisableIncludes = bDisableIncludes,
+                RootGenerateTarget = RootGenerateTarget
+            };
+        }
     }
 
     public static class Moonquake
@@ -35,17 +56,14 @@ namespace Moonquake
         
         private static int Main(string[] Arguments)
         {
+            // TODO: This needs total revamp but simple for now
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                Backend.Instance = new VisualStudioBackend();
-            }
-            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
-            {
-                Backend.Instance = new MakefileBackend();
+                Backend.Instance = new VCBackend();
             }
             else
             {
-                Console.WriteLine("You're hosted on an unsupported platform. Moonquake only works with Windows and Linux.");
+                Console.WriteLine("You're hosted on an unsupported platform. Moonquake only works with Windows.");
                 return 1;
             }
 
@@ -57,6 +75,9 @@ namespace Moonquake
                 
                 Config.AddCommand<Commands.BuildCommand>("build")
                       .WithDescription("Builds the Root with given name after interpreting the given description file.");
+                      
+                Config.AddCommand<Commands.GenerateCommand>("generate")
+                      .WithDescription("Generates project files for the Root with given name after interpreting the given description file.");
             });
             return App.Run(Arguments);
         }

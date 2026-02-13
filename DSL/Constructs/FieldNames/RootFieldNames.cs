@@ -4,6 +4,7 @@ namespace Moonquake.DSL.Constructs
 {
     public static class RootFieldNames
     {
+        public const string ORIGIN    = "Path";
         public const string CONFIGS   = "Configurations";
         public const string ARCHS     = "Architectures";
         public const string PLATFORMS = "Platforms";

@@ -15,7 +15,7 @@ namespace Moonquake.DSL.Directives
         protected void Invoke(ExecutionContext Context, DirectiveAST AST)
         {
             // No evaluation, unconditionally enter if we are in validation mode.
-            if (Moonquake.BuildOrder.bValidationMode)
+            if (Moonquake.BuildOrder.Type == BuildType.Validate)
             {
                 Context.Visit(AST.Body!);
                 return;

@@ -1,6 +1,6 @@
 // Copyright (C) 2026 ychgen, all rights reserved.
 
-using Moonquake.CodeGen;
+using Moonquake.Toolchain;
 
 namespace Moonquake.Orchestra
 {

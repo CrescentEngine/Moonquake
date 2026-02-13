@@ -10,6 +10,12 @@ namespace Moonquake.Orchestra
         // Future idea where Roots might depend on each other.
         // public List<BuildRoot> Dependencies = new();
         public string Name = "";
+        public string RootPath = "";
+
+        public string[] Configurations = [];
+        public Architectures[] Architectures = [];
+        public Platforms[] Platforms = [];
+
         public Dictionary<string, BuildModule> Modules = new();
         public BuildModule? MainModule;
     }

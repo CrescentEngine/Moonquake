@@ -44,7 +44,7 @@ namespace Moonquake.DSL.Constructs
             // IncludePaths
             NewArray(ModuleFieldNames.INCDIRS);
             // ExposedIncludePaths
-            NewArray(ModuleFieldNames.EXPINCL);
+            NewArray(ModuleFieldNames.EXPINCL).Since(new LanguageVersion(1, 1, 0));
         }
 
         public override ConstructType GetConstructType() => ConstructType.Module;

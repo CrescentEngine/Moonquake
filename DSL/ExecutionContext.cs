@@ -6,6 +6,7 @@ namespace Moonquake.DSL
     {
         public LanguageVersion DeclaredVersion = LanguageVersion.Invalid;
         public string Filepath = "";
+        public Stack<string> IncludedFiles = new();
 
         public const string BUILTIN_MODL = "BuiltinDefaultModule",
                             BUILTIN_ROOT = "BuiltinDefaultRoot",
@@ -19,13 +20,15 @@ namespace Moonquake.DSL
         private Stack<ExecutionFrame> FrameStack = new();
         public ExecutionFrame Frame => FrameStack.Peek();
 
+        private bool bTerminated = false;
+
         public ExecutionContext(string InFilepath, Action<AST> InVisit)
         {
             Filepath = InFilepath;
             Visit    = InVisit;
 
-            Roots  [BUILTIN_ROOT] = new Constructs.Root   { Name = BUILTIN_ROOT };
-            Schemas[BUILTIN_SCHM] = new Constructs.Schema { Name = BUILTIN_SCHM };
+            Roots  [BUILTIN_ROOT] = new Constructs.Root("") { Name = BUILTIN_ROOT };
+            Schemas[BUILTIN_SCHM] = new Constructs.Schema   { Name = BUILTIN_SCHM };
             Modules[BUILTIN_MODL] = new Constructs.Module(BUILTIN_MODL, "") ;
 
             PushFrame(EvaluationContext.GlobalScope, null);
@@ -61,5 +64,8 @@ namespace Moonquake.DSL
                 }
             }
         }
+
+        public void Terminate() => bTerminated = true;
+        public bool IsTerminated() => bTerminated;
     }
 }

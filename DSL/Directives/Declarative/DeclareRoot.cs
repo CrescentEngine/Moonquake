@@ -1,5 +1,7 @@
 // Copyright (C) 2026 ychgen, all rights reserved.
 
+using Moonquake.Commands;
+
 namespace Moonquake.DSL.Directives
 {
     public class DeclareRootDirective : Directive
@@ -19,10 +21,9 @@ namespace Moonquake.DSL.Directives
             {
                 throw new Exception($"{Name}() directive error : Attempting to declare a root with name '{ConstructName}', but a root with that name already exists.");
             }
-            Constructs.Root Subject = new Constructs.Root
+            Constructs.Root Subject = new Constructs.Root(Context.Filepath)
             {
-                Name = ConstructName,
-                Filepath = Context.Filepath
+                Name = ConstructName
             };
 
             Context.PushFrame(EvaluationContext.RootScope, Subject);
@@ -32,6 +33,11 @@ namespace Moonquake.DSL.Directives
             Context.PopFrame();
             
             Context.Roots[ConstructName] = Subject;
+            if (Moonquake.BuildOrder.Type == BuildType.Generate && ConstructName == Moonquake.BuildOrder.RootGenerateTarget!)
+            {
+                GenerateCommand.CanonicalRoot = Subject;
+                Context.Terminate();
+            }
         }
     }
 }

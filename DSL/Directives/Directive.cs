@@ -17,6 +17,9 @@ namespace Moonquake.DSL.Directives
     {
         // Populated by DirectiveRegistry.
         public string Name = "__unnamed_directive";
+
+        // Defines as of which LanguageVersion this directive came to be.
+        public LanguageVersion Since = LanguageVersion.Initial;
         
         // These are populated by children Directive classes.
         protected Dictionary<ImmutableArray<ASTType>, DirectiveOverload> Overloads = new(new AstTypeArrayComparer());

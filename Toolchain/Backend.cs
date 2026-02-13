@@ -3,13 +3,12 @@
 using System.Diagnostics;
 using Moonquake.Orchestra;
 
-namespace Moonquake.CodeGen
+namespace Moonquake.Toolchain
 {
     public enum Backends
     {
-        Null = 0,
-        VisualStudio,
-        Makefile
+        Null = 0, // Null, does jackshit
+        VC   = 1, // Visual C
     }
     public abstract class Backend
     {
@@ -18,21 +17,6 @@ namespace Moonquake.CodeGen
         public static Backend Instance;
 #pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
         public abstract Backends GetBackendType();
-
-        /// <summary>
-        /// Gets path to compiler executable/binary. Given output is valid at all times.
-        /// </summary>
-        public abstract string GetCompilerInvocation(Architectures Arch);
-
-        /// <summary>
-        /// Gets path to linker executable/binary. Given output is valid at all times.
-        /// </summary>
-        public abstract string GetLinkerInvocation(Architectures Arch);
-
-        /// <summary>
-        /// Gets path to static library linker executable/binary. Given output is valid at all times.
-        /// </summary>
-        public abstract string GetArchiverInvocation(Architectures Arch);
 
         /// <summary>
         /// Invokes the compiler related to this backend and compiles a given TU to the given object filepath name.
@@ -44,7 +28,7 @@ namespace Moonquake.CodeGen
         public abstract bool InvokeCompiler(string TranslationUnitToCompile, string ObjectFileAsToCompile, BuildModule Module);
 
         /// <summary>
-        /// Invokes the linker related to this backend to link multiple object files into the proper OutputType of Module.
+        /// Invokes the linker or archiver related to this backend to link multiple object files into the proper OutputType of Module.
         /// </summary>
         /// <param name="ObjectFiles">List of objects to link together.</param>
         /// <param name="Module">Flags & OutputType to be deduced from this.</param>
@@ -54,22 +38,7 @@ namespace Moonquake.CodeGen
     public class NullBackend : Backend
     {
         public override Backends GetBackendType() => Backends.Null;
-        public override string GetCompilerInvocation(Architectures Arch) => "";
-        public override string GetLinkerInvocation(Architectures Arch) => "";
-        public override string GetArchiverInvocation(Architectures Arch) => "";
         public override bool InvokeCompiler(string TranslationUnitToCompile, string ObjectFileAsToCompile, BuildModule Module) => false;
         public override bool InvokeLinker(IEnumerable<string> ObjectFiles, BuildModule Module) => false;
-    }
-    /// <summary>
-    /// Not yet implemented.
-    /// </summary>
-    public class MakefileBackend : Backend
-    {
-        public override Backends GetBackendType() => Backends.Makefile;
-        public override string GetCompilerInvocation(Architectures Arch) => throw new NotImplementedException();
-        public override string GetLinkerInvocation(Architectures Arch) => throw new NotImplementedException();
-        public override string GetArchiverInvocation(Architectures Arch) => throw new NotImplementedException();
-        public override bool InvokeCompiler(string TranslationUnitToCompile, string ObjectFileAsToCompile, BuildModule Module) => throw new NotImplementedException();
-        public override bool InvokeLinker(IEnumerable<string> ObjectFiles, BuildModule Module) => throw new NotImplementedException();
     }
 }

@@ -3,43 +3,57 @@
 using System.Diagnostics;
 using Moonquake.Orchestra;
 
-namespace Moonquake.CodeGen
+namespace Moonquake.Toolchain
 {
-    public class VisualStudioBackend : Backend
+    public class VCBackend : Backend
     {
+        public override Backends GetBackendType() => Backends.VC;
+
         public const string COMPILER_EXECUTABLE = "cl.exe";
-        public const string LINKER_EXECUTABLE   = "link.exe";
         public const string ARCHIVER_EXECUTABLE = "lib.exe";
+        public const string LINKER_EXECUTABLE   = "link.exe";
 
-        public override Backends GetBackendType() => Backends.VisualStudio;
-        private readonly Dictionary<Architectures, string> CachedToolsPaths = new();
-        private string? CachedVsInstallPath = null, CachedVsCmdDevPath = null;
+        private string VSInstallPath    = "";
+        private string VSDevCmdFilepath = "";
+        private readonly Dictionary<Architectures, string> CachedToolchainPaths = new();
 
-        public override string GetCompilerInvocation(Architectures Arch)
+        public VCBackend()
         {
-            string VCXToolsPath = GetVCXToolsPath(Arch);
-            return Path.Combine(VCXToolsPath, COMPILER_EXECUTABLE);
-        }
+            string vswhere = @"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe";
+            if (!File.Exists(vswhere))
+            {
+                throw new Exception("VCBackend error: vswhere.exe not found! Ensure you have Visual Studio installed. (https://visualstudio.microsoft.com/downloads/)");
+            }
+            ProcessStartInfo vswhereStartInfo = new ProcessStartInfo
+            {
+                FileName = vswhere,
+                Arguments = "-latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath",
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+            using Process Proc = Process.Start(vswhereStartInfo)!;
+            VSInstallPath = Proc.StandardOutput.ReadLine()!;
+            Proc.WaitForExit();
 
-        public override string GetLinkerInvocation(Architectures Arch)
-        {
-            string VCXToolsPath = GetVCXToolsPath(Arch);
-            return Path.Combine(VCXToolsPath, LINKER_EXECUTABLE);
-        }
-
-        public override string GetArchiverInvocation(Architectures Arch)
-        {
-            return Path.Combine(GetVCXToolsPath(Arch), ARCHIVER_EXECUTABLE);
+            if (string.IsNullOrEmpty(VSInstallPath))
+            {
+                throw new Exception("No suitable Visual Studio installation found. Make sure you installed a version of Visual Studio, not just the Visual Studio Installer.");
+            }
+            
+            VSDevCmdFilepath = Path.Combine(VSInstallPath, "Common7", "Tools", "VsDevCmd.bat");
+            if (!File.Exists(VSDevCmdFilepath))
+            {
+                throw new Exception($"VsDevCmd.bat batch script couldn't be located! Make sure you have a version of Visual Studio installed.");
+            }
         }
 
         public override bool InvokeCompiler(string TranslationUnitToCompile, string ObjectFileAsToCompile, BuildModule Module)
         {
-            string VsDevCmd;
             string CompilerPath;
             try
             {
-                VsDevCmd = GetVsDevCmdPath();
-                CompilerPath = GetCompilerInvocation(Moonquake.BuildOrder.Architecture);
+                CompilerPath = Path.Combine(GetToolchainPath(Moonquake.BuildOrder.Architecture), COMPILER_EXECUTABLE);
             }
             catch
             {
@@ -52,10 +66,10 @@ namespace Moonquake.CodeGen
                 "/c",
                 $"\"{TranslationUnitToCompile}\"",
                 $"/Fo\"{ObjectFileAsToCompile}\"",
-                $"/std:{ModuleLanguageStandardToClStd(Module.CppStandard)}",
+                $"/std:{GetModuleLanguageStandardFlag(Module.CppStandard)}",
                 "/EHsc",
-                GetModuleRuntimeLibsFlag(Module.RuntimeLibraries),
-                $"/O{GetOptimizationLevel(Module.OptimizationLevel)}",
+                GetModuleRuntimeLibrariesFlag(Module.RuntimeLibraries),
+                $"/O{GetOptimizationLevelFlag(Module.OptimizationLevel)}",
                 
             ];
             if (Module.bGenerateSymbols)
@@ -73,7 +87,7 @@ namespace Moonquake.CodeGen
             }
 
             string CommandLine = string.Join(" ", Arguments);
-            string LaunchCommand = $"\"{VsDevCmd}\" -no_logo -arch={Moonquake.BuildOrder.Architecture} && \"{CompilerPath}\" {CommandLine}";
+            string LaunchCommand = $"\"{VSDevCmdFilepath}\" -no_logo -arch={Moonquake.BuildOrder.Architecture} && \"{CompilerPath}\" {CommandLine}";
 
             ProcessStartInfo CmdStartInfo = new ProcessStartInfo
             {
@@ -110,7 +124,7 @@ namespace Moonquake.CodeGen
 
         public override bool InvokeLinker(IEnumerable<string> ObjectFiles, BuildModule Module)
         {
-            string FinalBin = Path.Combine(Module.OutputPath, Module.OutputName + GetOutputTypeExt(Module.OutputType));
+            string FinalBin = Path.Combine(Module.OutputPath, Module.OutputName + GetOutputTypeFileExtension(Module.OutputType));
             if (!Directory.Exists(Module.OutputPath))
             {
                 Directory.CreateDirectory(Module.OutputPath);
@@ -128,12 +142,11 @@ namespace Moonquake.CodeGen
             }
             case ModuleOutputType.StaticLibrary:
             {
-                string VsDevCmd = GetVsDevCmdPath();
-                string ArchiverPath = GetArchiverInvocation(Moonquake.BuildOrder.Architecture);
+                string ArchiverPath = Path.Combine(GetToolchainPath(Moonquake.BuildOrder.Architecture), ARCHIVER_EXECUTABLE);
 
                 List<string> Arguments = [ "/nologo", .. ObjectFiles, $"/OUT:{FinalBin}" ];
                 string CommandLine = string.Join(" ", Arguments);
-                string LaunchCommand = $"\"{VsDevCmd}\" -no_logo -arch={Moonquake.BuildOrder.Architecture} && \"{ArchiverPath}\" {CommandLine}";
+                string LaunchCommand = $"\"{VSDevCmdFilepath}\" -no_logo -arch={Moonquake.BuildOrder.Architecture} && \"{ArchiverPath}\" {CommandLine}";
 
                 ProcessStartInfo CmdStartInfo = new ProcessStartInfo
                 {
@@ -169,13 +182,12 @@ namespace Moonquake.CodeGen
 
             bool LinkWithLinkExe(string InSpecificFlag)
             {
-                string VsDevCmd = GetVsDevCmdPath();
-                string LinkerPath = GetLinkerInvocation(Moonquake.BuildOrder.Architecture);
+                string LinkerPath = Path.Combine(GetToolchainPath(Moonquake.BuildOrder.Architecture), LINKER_EXECUTABLE);
 
                 List<string> Linkages = new();
                 foreach (BuildModule Linkage in Module.Linkages.Values)
                 {
-                    Linkages.Add(Path.Combine(Linkage.OutputPath, Path.Combine(Linkage.OutputName) + GetOutputTypeExt(Linkage.OutputType)));
+                    Linkages.Add(Path.Combine(Linkage.OutputPath, Path.Combine(Linkage.OutputName) + GetOutputTypeFileExtension(Linkage.OutputType)));
                 }
 
                 List<string> Arguments = ["/nologo", .. ObjectFiles, .. Module.Libraries, .. Linkages, $"/OUT:{FinalBin}", InSpecificFlag];
@@ -193,7 +205,7 @@ namespace Moonquake.CodeGen
                 });
 
                 string CommandLine = string.Join(" ", Arguments);
-                string LaunchCommand = $"\"{VsDevCmd}\" -no_logo -arch={Moonquake.BuildOrder.Architecture} && \"{LinkerPath}\" {CommandLine}";
+                string LaunchCommand = $"\"{VSDevCmdFilepath}\" -no_logo -arch={Moonquake.BuildOrder.Architecture} && \"{LinkerPath}\" {CommandLine}";
 
                 ProcessStartInfo CmdStartInfo = new ProcessStartInfo
                 {
@@ -224,68 +236,19 @@ namespace Moonquake.CodeGen
 
             return false;
         }
-
-        public string GetVSInstallPath()
-        {
-            if (CachedVsInstallPath is not null)
-            {
-                return CachedVsInstallPath;
-            }
-
-            string vswhere = @"C:\Program Files (x86)\Microsoft Visual Studio\Installer\vswhere.exe";
-            if (!File.Exists(vswhere))
-            {
-                throw new Exception("BackendUtils.GetVCXToolsPath() error: vswhere.exe not found! Ensure you have Visual Studio installed. (https://visualstudio.microsoft.com/downloads/)");
-            }
-            ProcessStartInfo vswhereStartInfo = new ProcessStartInfo
-            {
-                FileName = vswhere,
-                Arguments = "-latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath",
-                RedirectStandardOutput = true,
-                UseShellExecute = false,
-                CreateNoWindow = true
-            };
-            using Process Proc = Process.Start(vswhereStartInfo)!;
-            string InstallPath = Proc.StandardOutput.ReadLine()!;
-            Proc.WaitForExit();
-
-            if (string.IsNullOrEmpty(InstallPath))
-            {
-                throw new Exception("No suitable Visual Studio installation found. Make sure you installed a version of Visual Studio, not just the Visual Studio Installer.");
-            }
-
-            CachedVsInstallPath = InstallPath;
-            return InstallPath;
-        }
-
-        public string GetVsDevCmdPath()
-        {
-            if (CachedVsCmdDevPath is not null)
-            {
-                return CachedVsCmdDevPath;
-            }
-            string Cmbpath = Path.Combine(GetVSInstallPath(), "Common7", "Tools", "VsDevCmd.bat");
-            if (!File.Exists(Cmbpath))
-            {
-                throw new Exception($"VsDevCmd.bat batch script couldn't be located! Make sure you have a version of Visual Studio installed.");
-            }
-            CachedVsCmdDevPath = Cmbpath;
-            return CachedVsCmdDevPath;
-        }
         
-        public string GetVCXToolsPath(Architectures Arch)
+        public string GetToolchainPath(Architectures Arch)
         {
             {
                 string? Cached;
-                if (CachedToolsPaths.TryGetValue(Arch, out Cached))
+                if (CachedToolchainPaths.TryGetValue(Arch, out Cached))
                 {
                     return Cached; 
                 }
             }
 
-            string InstallPath = GetVSInstallPath();
+            string VCToolsPath = Path.Combine(VSInstallPath, @"VC\Tools\MSVC");
 
-            string VCToolsPath = Path.Combine(InstallPath, @"VC\Tools\MSVC");
             if (!Directory.Exists(VCToolsPath))
             {
                 throw new Exception("MSVCX Tools (Microsoft Visual Studio C/C++) not found. Make sure you have a compiler toolchain installed.");
@@ -338,52 +301,42 @@ namespace Moonquake.CodeGen
                 throw new Exception($"{LINKER_EXECUTABLE} missing, linker not found even though all toolchain paths exist.");
             }
 
-            CachedToolsPaths[Arch] = Final;
+            CachedToolchainPaths[Arch] = Final;
             return Final;
         }
 
-        private string ModuleLanguageStandardToClStd(ModuleLanguageStandard Std)
+        private string GetModuleLanguageStandardFlag(ModuleLanguageStandard Standard) => Standard switch
         {
-            switch (Std)
-            {
-            case ModuleLanguageStandard.Cpp14: return "c++14";
-            case ModuleLanguageStandard.Cpp17: return "c++17";
-            case ModuleLanguageStandard.Cpp20: return "c++20";
-            }
-            throw new Exception("Ivld std");
-        }
+            ModuleLanguageStandard.Cpp14 => "c++14",
+            ModuleLanguageStandard.Cpp17 => "c++17",
+            ModuleLanguageStandard.Cpp20 => "c++20",
+            _ => throw new Exception()
+        };
 
-        private string GetModuleRuntimeLibsFlag(ModuleRuntimeLibraries RtLibs)
+        private string GetModuleRuntimeLibrariesFlag(ModuleRuntimeLibraries RuntimeLibraries) => RuntimeLibraries switch
         {
-            switch (RtLibs)
-            {
-            case ModuleRuntimeLibraries.UseDebug:   return "/MDd";
-            case ModuleRuntimeLibraries.UseRelease: return "/MD";
-            }
-            throw new Exception("Ivld rtlibs");
-        }
+            ModuleRuntimeLibraries.UseDebug   => "/MDd",
+            ModuleRuntimeLibraries.UseRelease => "/MD",
+            _ => throw new Exception()
+        };
 
-        private string GetOptimizationLevel(ModuleOptimization Olevel)
+        private string GetOptimizationLevelFlag(ModuleOptimization OptimizationLevel) => OptimizationLevel switch
         {
-            switch (Olevel)
-            {
-            case ModuleOptimization.Off:      return "d";
-            case ModuleOptimization.Balanced: return "2";
-            case ModuleOptimization.Smallest: return "1";
-            case ModuleOptimization.Fastest:  return "2";
-            case ModuleOptimization.Full:     return "x";
-            }
-            throw new Exception("Ivld olevel");
-        }
+            ModuleOptimization.Off       => "d",
+            ModuleOptimization.Balanced  => "2",
+            ModuleOptimization.Smallest  => "1",
+            ModuleOptimization.Fastest   => "2",
+            ModuleOptimization.Full      => "x",
+            _ => throw new Exception()
+        };
 
-        private string GetOutputTypeExt(ModuleOutputType Type) => Type switch
+        private string GetOutputTypeFileExtension(ModuleOutputType Type) => Type switch
         {
             ModuleOutputType.ConsoleExecutable  => ".exe",
             ModuleOutputType.WindowedExecutable => ".exe",
             ModuleOutputType.StaticLibrary      => ".lib",
             ModuleOutputType.DynamicLibrary     => ".dll",
-
-            _ => throw new NotImplementedException()
+            _ => throw new Exception()
         };
     }
 }

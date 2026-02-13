@@ -23,6 +23,11 @@ namespace Moonquake.DSL
             Patch = InPatch;
         }
 
+        public bool IsMoreRecent(LanguageVersion Other)
+        {
+            return Major > Other.Major || (Major == Other.Major && Minor > Other.Minor) || (Major == Other.Major && Minor == Other.Minor && Patch > Other.Patch);
+        }
+
         public static LanguageVersion FromString(string Str)
         {
             if (string.IsNullOrWhiteSpace(Str))

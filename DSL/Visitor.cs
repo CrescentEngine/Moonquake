@@ -20,6 +20,10 @@ namespace Moonquake.DSL
 
         public void Visit(AST Node)
         {
+            if (Context.IsTerminated())
+            {
+                return;
+            }
             switch (Node.Type)
             {
             case ASTType.Compound:

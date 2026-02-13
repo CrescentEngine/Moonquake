@@ -36,6 +36,8 @@ namespace Moonquake.DSL.Constructs
     {
         public string FieldName = "";
         private ConstructFieldFlags Flags = ConstructFieldFlags.Pure | ConstructFieldFlags.Unset;
+        // Defines as of which LanguageVersion this directive came to be.
+        private LanguageVersion _Since = LanguageVersion.Initial;
         
         public abstract void Reset();
         public abstract ConstructFieldType GetFieldType();
@@ -44,6 +46,8 @@ namespace Moonquake.DSL.Constructs
         {
             AddFlag(ConstructFieldFlags.Protected);
         }
+
+        public void Since(LanguageVersion Ver) => _Since = Ver;
 
         public bool HasFlags(ConstructFieldFlags InFlags) { return (Flags & InFlags) == InFlags; }
         public bool IsPure() => HasFlags(ConstructFieldFlags.Pure);
