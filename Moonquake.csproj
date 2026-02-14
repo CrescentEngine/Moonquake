@@ -19,4 +19,14 @@
     <PackageReference Include="Spectre.Console.Cli" Version="0.53.1" />
   </ItemGroup>
 
+  <PropertyGroup>
+    <AssemblyTitle>Moonquake Build Tool</AssemblyTitle>
+    <AssemblyDescription>Build Tool made for Crescent Engine</AssemblyDescription>
+    <AssemblyCompany>ychgem</AssemblyCompany>
+    <AssemblyProduct>Moonquake</AssemblyProduct>
+    <AssemblyCopyright>© 2026 ychgem</AssemblyCopyright>
+    <AssemblyVersion>1.1.0</AssemblyVersion>
+    <FileVersion>1.1.0</FileVersion>
+  </PropertyGroup>
+
 </Project>

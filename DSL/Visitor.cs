@@ -98,6 +98,7 @@ namespace Moonquake.DSL
                 {
                 case EvaluationContext.SchemaScope:
                 case EvaluationContext.ModuleScope:
+                case EvaluationContext.DeferredScope:
                 {
                     Constructs.Module Mod = (Constructs.Module) Context.Frame.Construct;
 

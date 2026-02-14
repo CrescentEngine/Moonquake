@@ -4,10 +4,12 @@ namespace Moonquake.DSL.Constructs
 {
     public class Module : Construct
     {
+        public Root Root;
         public Schema? Template;
 
-        public Module(string InName, string InFilepath)
+        public Module(Root InRoot, string InName, string InFilepath)
         {
+            Root = InRoot;
             Name = InName;
             Filepath = InFilepath;
 

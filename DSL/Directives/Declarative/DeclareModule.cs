@@ -34,8 +34,25 @@ namespace Moonquake.DSL.Directives
             {
                 throw new Exception($"{Name}() directive error: Attempting to declare a module with name '{ConstructName}' templated from schema '{TemplateName}', but no such Schema construct exists.");
             }
+            Constructs.Root? RootOfSubject = null;
+            foreach (Constructs.Root Rt in Context.Roots.Values)
+            {
+                foreach (string Module in Rt.Arr(Constructs.RootFieldNames.MODULES))
+                {
+                    if (Module == ConstructName)
+                    {
+                        RootOfSubject = Rt;
+                        goto CheckRoot;
+                    }
+                }
+            }
+        CheckRoot:
+            if (RootOfSubject is null)
+            {
+                throw new Exception($"{Name}() directive error: Trying to declare module '{ConstructName}', but no root has included such module in their '{Constructs.RootFieldNames.MODULES}' field.");
+            }
             Constructs.Schema Template = Context.Schemas[TemplateName];
-            Constructs.Module Subject = new Constructs.Module(ConstructName, Context.Filepath)
+            Constructs.Module Subject = new Constructs.Module(RootOfSubject, ConstructName, Context.Filepath)
             {
                 Template = Template
             };

@@ -12,7 +12,11 @@ namespace Moonquake.DSL.Directives
 
         protected void Invoke(ExecutionContext Context, DirectiveAST AST)
         {
-            // Defer is not really "invoked", DECLARE_SCHEMA directive just takes a reference to its body.
+            Constructs.Module Module = (Constructs.Module) Context.Frame.Construct!;
+            foreach (var KVP in Module.Fields)
+            {
+                KVP.Value.Protect();
+            }
         }
     }
 }

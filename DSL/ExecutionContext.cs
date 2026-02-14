@@ -29,7 +29,7 @@ namespace Moonquake.DSL
 
             Roots  [BUILTIN_ROOT] = new Constructs.Root("") { Name = BUILTIN_ROOT };
             Schemas[BUILTIN_SCHM] = new Constructs.Schema   { Name = BUILTIN_SCHM };
-            Modules[BUILTIN_MODL] = new Constructs.Module(BUILTIN_MODL, "") ;
+            Modules[BUILTIN_MODL] = new Constructs.Module(Roots[BUILTIN_ROOT], BUILTIN_MODL, "") ;
 
             PushFrame(EvaluationContext.GlobalScope, null);
         }

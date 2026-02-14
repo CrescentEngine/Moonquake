@@ -92,6 +92,10 @@ namespace Moonquake.Orchestra
             string PrevWorkingDir = Directory.GetCurrentDirectory();
             Directory.SetCurrentDirectory(Path.GetDirectoryName(InModule.Filepath.TrimEnd(Path.DirectorySeparatorChar))!);
 
+            Directory.CreateDirectory(InModule.Str(ModuleFieldNames.ORIGIN));
+            Directory.CreateDirectory(InModule.Str(ModuleFieldNames.BINPATH));
+            Directory.CreateDirectory(InModule.Str(ModuleFieldNames.OBJPATH));
+
             BuildModule Final = new BuildModule
             {
                 Name = InModule.Name,
