@@ -66,13 +66,6 @@ namespace Moonquake
         }
         public static bool IsMatch(string Str, string Pattern)
         {
-            // Caching is creating issues as of now.
-            // TODO/FIXME: Implement properly. For now we stop caching.
-
-            string Escaped = Regex.Escape(Pattern);
-            string Final   = "^" + Escaped.Replace(@"\*", ".*") + "$";
-            return Regex.IsMatch(Str, Final);
-
             Regex Rgx = PatternCache.GetOrAdd(Pattern, p =>
             {
                 string Escaped = Regex.Escape(p);

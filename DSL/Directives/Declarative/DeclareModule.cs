@@ -64,9 +64,13 @@ namespace Moonquake.DSL.Directives
 
             if (Template.Body is not null)
             {
+                // If we don't clone, modules that inherit from same Schema will have problems
+                // because stuff in there will be resolved (already visited by Visitor)
+                CompoundAST Body = (CompoundAST) Template.Body!.Clone();
+
                 Context.PushFrame(EvaluationContext.SchemaScope, Subject);
                 {
-                    Context.Visit(Template.Body!);
+                    Context.Visit(Body);
                 }
                 Context.PopFrame();
             }
@@ -77,9 +81,13 @@ namespace Moonquake.DSL.Directives
             Context.PopFrame();
             if (Template.Defer is not null)
             {
+                // If we don't clone, modules that inherit from same Schema will have problems
+                // because stuff in there will be resolved (already visited by Visitor)
+                DirectiveAST Defer = (DirectiveAST) Template.Defer!.Clone();
+
                 Context.PushFrame(EvaluationContext.DeferredScope, Subject);
                 {
-                    Context.Visit(Template.Defer.Body!);
+                    Context.Visit(Defer);
                 }
                 Context.PopFrame();
             }
