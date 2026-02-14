@@ -87,7 +87,7 @@ namespace Moonquake.DSL.Directives
 
                 Context.PushFrame(EvaluationContext.DeferredScope, Subject);
                 {
-                    Context.Visit(Defer);
+                    Context.Visit(Defer.Body!);
                 }
                 Context.PopFrame();
             }
