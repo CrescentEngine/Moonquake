@@ -71,7 +71,7 @@ namespace Moonquake
 
             string Escaped = Regex.Escape(Pattern);
             string Final   = "^" + Escaped.Replace(@"\*", ".*") + "$";
-            return new Regex(Final, RegexOptions.Compiled).IsMatch(Str);
+            return Regex.IsMatch(Str, Final);
 
             Regex Rgx = PatternCache.GetOrAdd(Pattern, p =>
             {
