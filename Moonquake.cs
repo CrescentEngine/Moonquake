@@ -1,6 +1,7 @@
 ﻿// Copyright (C) 2026 ychgen, all rights reserved.
 
 using System.Runtime.InteropServices;
+using Moonquake.DSL.Directives;
 using Moonquake.Toolchain;
 using Spectre.Console.Cli;
 
@@ -56,6 +57,8 @@ namespace Moonquake
         
         private static int Main(string[] Arguments)
         {
+            DirectiveRegistry.Init();
+
             // TODO: This needs total revamp but simple for now
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {

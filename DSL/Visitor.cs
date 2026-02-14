@@ -179,12 +179,12 @@ namespace Moonquake.DSL
             {
                 if (Node.Body is null)
                 {
-                    throw new Exception($"Visitor.VisitDirective() errror: Directive '{Node.DirectiveName}()' cannot have a body.");
+                    throw new Exception($"Visitor.VisitDirective() errror: Directive '{Node.DirectiveName}()' must have a body.");
                 }
             }
             else if (Node.Body is not null)
             {
-                throw new Exception($"Visitor.VisitDirective() errror: Directive '{Node.DirectiveName}()' must have a body.");
+                throw new Exception($"Visitor.VisitDirective() errror: Directive '{Node.DirectiveName}()' cannot have a body.");
             }
 
             if (Context.Frame.EvalContext == EvaluationContext.DeferredScope && !Directive.IsConditional())

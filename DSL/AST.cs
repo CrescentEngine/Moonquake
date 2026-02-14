@@ -115,9 +115,9 @@ namespace Moonquake.DSL
         {
             return new StringAST
             {
-                Literal = Literal,
+                Literal  = Literal,
                 Resolved = Resolved,
-                SrcInfo = SrcInfo
+                SrcInfo  = SrcInfo
             };
         }
     }
@@ -141,6 +141,16 @@ namespace Moonquake.DSL
             DirectiveName = InDirectiveName;
             Parameters = InParameters;
             Body = InBody;
+        }
+        public override AST Clone()
+        {
+            return new DirectiveAST
+            {
+                DirectiveName = DirectiveName,
+                Parameters = (CompoundAST) Parameters.Clone(),
+                Body = (CompoundAST?) Body?.Clone(),
+                SrcInfo = SrcInfo
+            };
         }
     }
 
@@ -306,7 +316,7 @@ namespace Moonquake.DSL
         {
             return new ArrayAST
             {
-                Value = Value.Select(s => (StringAST)s.Clone()).ToList(),
+                Value = Value.Select(s => (StringAST) s.Clone()).ToList(),
                 SrcInfo = SrcInfo
             };
         }
