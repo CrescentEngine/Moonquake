@@ -104,6 +104,8 @@ namespace Moonquake.DSL
 
                     // TODO: Actually implement proper replacements.
                     // These are quick hacks to get our Examples going.
+                    Builder.Replace("{Root.Name}", Mod.Root.Name);
+                    Builder.Replace("{Root.Path}", Mod.Root.Str(Constructs.RootFieldNames.ORIGIN));
                     Builder.Replace("{Module.Name}", Mod.Name);
                     Builder.Replace("{Module.Path}", Mod.Str("Path"));
                     Builder.Replace("{BuildOrder.Configuration}", Moonquake.BuildOrder.Configuration);
