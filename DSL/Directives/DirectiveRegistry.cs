@@ -26,10 +26,13 @@ namespace Moonquake.DSL.Directives
 
             /** Evaluative */
             Register<IncludeDirective>(DirectiveNames.INCLUDE_MODULE);
+            Register<SystemCallDirective>(DirectiveNames.SYSCALL);
+            Register<SystemExecCallDirective>(DirectiveNames.EXECALL);
 
             /** Lazy */
             Register<DeferDirective>(DirectiveNames.DEFER_EXEC);
 
+            /** Module */
             Register<ProtectFieldDirective>(DirectiveNames.FIELD_PROTECT);
             Register<ProtectAllFieldsDirective>(DirectiveNames.FIELDS_PROTECT);
         }

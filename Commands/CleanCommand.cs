@@ -9,18 +9,14 @@ using Spectre.Console.Cli;
 
 namespace Moonquake.Commands
 {
-    class GenerateSettings : CommandSettings
+    class CleanSettings : CommandSettings
     {
-        [CommandArgument(0, "<for>")]
-        [Description("Which sort of project files to generate, must be either \"VisualStudio\" or \"Makefile\".")]
-        public string For { get; set; } = "";
-
-        [CommandArgument(1, "<input>")]
+        [CommandArgument(0, "<input>")]
         [Description("Input description file")]
         public string Input { get; set; } = "";
         
-        [CommandArgument(2, "<root>")]
-        [Description("Root to generate project files of, must be eventually declared in <input> or its includes")]
+        [CommandArgument(1, "<root>")]
+        [Description("Which root to clean up")]
         public string Root { get; set; } = "";
         
         [CommandOption("-d|--directory")]
@@ -28,34 +24,14 @@ namespace Moonquake.Commands
         public bool bDirectory { get; set; } = false;
     }
 
-    class GenerateCommand : Command<GenerateSettings>
+    class CleanCommand : Command<CleanSettings>
     {
-        public override int Execute(CommandContext Context, GenerateSettings Settings, CancellationToken CancellationToken)
+        public override int Execute(CommandContext Context, CleanSettings Settings, CancellationToken CancellationToken)
         {
             // See deeper into the function to see what these affect.
             Moonquake.BuildOrder.RootGenerateTarget = Settings.Root;
-            Moonquake.BuildOrder.Type = BuildType.Generate;
+            Moonquake.BuildOrder.Type = BuildType.Clean;
             
-            ProjectFileGenerator Generator;
-            switch (Settings.For)
-            {
-            case "VisualStudio":
-            {
-                Generator = new VisualStudioProjectFileGenerator();
-                break;
-            }
-            case "Makefile":
-            {
-                Generator = new MakefileProjectFileGenerator();
-                break;
-            }
-            default:
-            {
-                Console.WriteLine($"Cannot generate project files for '{Settings.For}', invalid value provided.");
-                return 1;
-            }
-            }
-
             string Filepath;
             CompoundAST? SourceRoot = DescriptionFileInputHelper.Help(Settings.Input, Settings.bDirectory, out Filepath);
             if (SourceRoot is null) return 1;
@@ -71,7 +47,7 @@ namespace Moonquake.Commands
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Visitor runtime execution failed, this description file is not valid and therefore project files cannot be generated. {e.Message}");
+                Console.WriteLine($"Visitor runtime execution failed, this description file is not valid and therefore project files cannot be cleaned. {e.Message}");
                 return 1;
             }
 
@@ -98,15 +74,21 @@ namespace Moonquake.Commands
                 return 1;
             }
 
-            try
+            foreach (var (Cfg, RootResolution) in Resolutions)
             {
-                Generator.Generate(Resolutions);
-                Generator.DumpDefinitions(Resolutions);
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"Couldn't generate project files for canonical root '{Settings.Root}'. {e.Message}");
-                return 1;
+                foreach (var (Name, ModRes) in RootResolution.Modules)
+                {
+                    string GenIntPath = ModRes.GetGeneratedIntermediatesPath(Cfg);
+                    try
+                    {
+                        Directory.Delete(ModRes.OutputPath, true);
+                        Directory.Delete(ModRes.ObjectPath, true);
+                        Directory.Delete(GenIntPath, true);
+                    }
+                    catch // Do nothing
+                    {
+                    }
+                }
             }
 
             return 0;

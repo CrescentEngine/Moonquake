@@ -31,7 +31,10 @@ namespace Moonquake.Orchestra
                 RootPath = InRoot.Str(RootFieldNames.ORIGIN),
                 Configurations = InRoot.Arr(RootFieldNames.CONFIGS).Distinct().ToArray(),
                 Architectures = InRoot.Arr(RootFieldNames.ARCHS).Distinct().Select(n => (Architectures)Enum.Parse(typeof(Architectures), n)).ToArray(),
-                Platforms = InRoot.Arr(RootFieldNames.PLATFORMS).Distinct().Select(n => (Platforms)Enum.Parse(typeof(Platforms), n)).ToArray()
+                Platforms = InRoot.Arr(RootFieldNames.PLATFORMS).Distinct().Select(n => (Platforms)Enum.Parse(typeof(Platforms), n)).ToArray(),
+                BuildCommand = InRoot.Str(RootFieldNames.BUILD),
+                ReBuildCommand = InRoot.Str(RootFieldNames.REBUILD),
+                CleanCommand = InRoot.Str(RootFieldNames.CLEAN)
             };
 
             foreach (string ModuleName in InRoot.Arr(RootFieldNames.MODULES))
@@ -182,14 +185,18 @@ namespace Moonquake.Orchestra
                     throw new Exception($"BuildFinalizer.FinalizeModule() error: Module '{InModule.Name}' wants to link against module '{Linkage}', however no such module exists in root '{InRoot.Name}' which '{InModule.Name}' is apart of. Cross-root module linkages are illegal.");
                 }
 
-                InDependencyDenyList.Add(InModule.Name);
-                    BuildModule Module = FinalizeModule(ExecContext, InBuildRoot, InRoot, Mod, InDependencyDenyList);
-                InDependencyDenyList.RemoveAt(InDependencyDenyList.Count - 1);
+                BuildModule? Module;
+                if (!InBuildRoot.Modules.TryGetValue(Linkage, out Module))
+                {
+                    InDependencyDenyList.Add(InModule.Name);
+                        Module = FinalizeModule(ExecContext, InBuildRoot, InRoot, Mod, InDependencyDenyList);
+                    InDependencyDenyList.RemoveAt(InDependencyDenyList.Count - 1);
+                }
 
                 Final.Linkages[Module.Name] = Module;
                 InBuildRoot.Modules[Module.Name] = Module;
             }
-            Final.Dependencies = Final.Linkages; // Carry over linkages (they are dependencies as well)
+            Final.Dependencies = new(Final.Linkages); // Carry over linkages (they are dependencies as well)
             foreach (string Dependency in InModule.Arr(ModuleFieldNames.PREREQ).Distinct())
             {
                 if (InModule.Arr(ModuleFieldNames.LINKS).Contains(Dependency))
@@ -207,9 +214,13 @@ namespace Moonquake.Orchestra
                     throw new Exception($"BuildFinalizer.FinalizeModule() error: Module '{InModule.Name}' wants to depend on module '{Dependency}', however no such module exists in root '{InRoot.Name}' which '{InModule.Name}' is apart of. Cross-root module dependencies are illegal.");
                 }
 
-                InDependencyDenyList.Add(InModule.Name);
-                    BuildModule Module = FinalizeModule(ExecContext, InBuildRoot, InRoot, Mod, InDependencyDenyList);
-                InDependencyDenyList.RemoveAt(InDependencyDenyList.Count - 1);
+                BuildModule? Module;
+                if (!InBuildRoot.Modules.TryGetValue(Dependency, out Module))
+                {
+                    InDependencyDenyList.Add(InModule.Name);
+                        Module = FinalizeModule(ExecContext, InBuildRoot, InRoot, Mod, InDependencyDenyList);
+                    InDependencyDenyList.RemoveAt(InDependencyDenyList.Count - 1);
+                }
 
                 Final.Dependencies[Module.Name] = Module;
                 InBuildRoot.Modules[Module.Name] = Module;
@@ -219,6 +230,15 @@ namespace Moonquake.Orchestra
             foreach (BuildModule Dependency in Final.Dependencies.Values)
             {
                 Final.IncludePaths.AddRange(Dependency.ExposedIncludePaths);
+            }
+
+            // Now some fun meta stuff
+            Final.Definitions.Add($"MQ_MODULE_NAME=\"{Final.Name}\"");
+            // If building a DLL module, specify we should export stuff.
+            Final.Definitions.Add($"{BuildModule.GetAPIMacro(Final.Name)}={(Final.OutputType == ModuleOutputType.DynamicLibrary ? "DLLEXPORT" : "")}");
+            foreach (var (Name, Dependency) in Final.Dependencies)
+            {
+                Final.Definitions.Add($"{BuildModule.GetAPIMacro(Name)}={(Dependency.OutputType == ModuleOutputType.DynamicLibrary ? "DLLIMPORT" : "")}");
             }
 
             Directory.SetCurrentDirectory(PrevWorkingDir);

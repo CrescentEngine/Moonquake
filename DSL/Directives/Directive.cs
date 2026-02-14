@@ -9,7 +9,8 @@ namespace Moonquake.DSL.Directives
     {
         None        = 0 << 0,
         Bodily      = 1 << 0,
-        Conditional = 1 << 1
+        Conditional = 1 << 1, // Same as below.
+        Inert       = 1 << 2, // These directives are valid in DeferredScope too.
     }
 
     public delegate void DirectiveOverload(ExecutionContext Context, DirectiveAST AST);
@@ -38,6 +39,7 @@ namespace Moonquake.DSL.Directives
         public bool HasFlags(DirectiveFlags InFlags) => (Flags & InFlags) == InFlags;
         public bool IsBodily() => HasFlags(DirectiveFlags.Bodily);
         public bool IsConditional() => HasFlags(DirectiveFlags.Conditional);
+        public bool IsInvokableInDeferredScope() => IsConditional() || HasFlags(DirectiveFlags.Inert);
 
         protected void Overload(ASTType[] InOverload, DirectiveOverload InHandler)
         {

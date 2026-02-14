@@ -2,6 +2,7 @@
 
 using Microsoft.Build.Construction;
 using Microsoft.Build.Evaluation;
+using Moonquake.DSL.Constructs;
 using Moonquake.Orchestra;
 
 namespace Moonquake.CodeGen
@@ -105,8 +106,54 @@ namespace Moonquake.CodeGen
 
         private void GenerateSolution(Dictionary<string, GenerateProjectResult> Projects, Dictionary<TestBuildConfig, BuildRoot> InResolutions)
         {
+            BuildRoot ExampleRoot = InResolutions.First().Value;
+            string BuilderProjectLocation = Path.Combine(ExampleRoot.RootPath, ExampleRoot.Name + ".vcxproj");
+            string BuilderProjectGuid = Guid.NewGuid().ToString("B").ToUpper();
+            {
+                ProjectRootElement Proj = ProjectRootElement.Create();
+                var ProjectConfigurations = Proj.AddItemGroup();
+                ProjectConfigurations.Label = "ProjectConfigurations";
+                foreach (var (Cfg, _) in InResolutions)
+                {
+                    var ProjectConfiguration = ProjectConfigurations.AddItem("ProjectConfiguration", $"{Cfg.Config}|{ArchStr(Cfg.Arch)}");
+                    ProjectConfiguration.AddMetadata("Configuration", Cfg.Config, expressAsAttribute: false);
+                    ProjectConfiguration.AddMetadata("Platform", ArchStr(Cfg.Arch), expressAsAttribute: false);
+                }
+
+                var MainPG = Proj.AddPropertyGroup();
+                MainPG.Label = "Globals";
+                MainPG.SetProperty("ProjectGuid", BuilderProjectGuid);
+                MainPG.SetProperty("ProjectName", ExampleRoot.Name);
+                MainPG.SetProperty("RootNamespace", ExampleRoot.Name);
+                MainPG.SetProperty("ConfigurationType", "Makefile"); // NMake
+                MainPG.SetProperty("PlatformToolset", "v145"); // VS2026
+
+                foreach (var (Cfg, RR) in InResolutions)
+                {
+                    string Condition = $"'$(Configuration)|$(Platform)'=='{Cfg.Config}|{ArchStr(Cfg.Arch)}'";
+                    var Group = Proj.AddPropertyGroup();
+                    Group.Condition = Condition;
+                    
+                    Group.AddProperty("TargetName", RR.MainModule!.OutputName);
+                    Group.AddProperty("OutDir", RR.MainModule!.OutputPath);
+                    Group.AddProperty("IntDir", RR.MainModule!.ObjectPath);
+
+                    // NMake build commands
+                    // VC/WinShell is picky so we have to convert all path separators to reverse slashes
+                    Group.SetProperty("NMakeBuildCommandLine", RR.BuildCommand.Replace('/', '\\'));
+                    Group.SetProperty("NMakeReBuildCommandLine", RR.ReBuildCommand.Replace('/', '\\'));
+                    Group.SetProperty("NMakeCleanCommandLine", RR.CleanCommand.Replace('/', '\\'));
+                }
+
+                Proj.AddImport(@"$(VCTargetsPath)\Microsoft.Cpp.Default.props");
+                Proj.AddImport(@"$(VCTargetsPath)\Microsoft.Cpp.props");
+                Proj.AddImport(@"$(VCTargetsPath)\Microsoft.Cpp.targets");
+
+                Proj.Save(BuilderProjectLocation);
+            }
+            
             string FileHeader = "\nMicrosoft Visual Studio Solution File, Format Version 12.00\n# Visual Studio Version 17\nVisualStudioVersion = 17.6.33424.112\nMinimumVisualStudioVersion = 10.0.40219.1\n";
-            string ProjectsDefinition = "";
+            string ProjectsDefinition = $"Project(\"{{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}}\") = \"{ExampleRoot.Name}\", \"{BuilderProjectLocation}\", \"{BuilderProjectGuid}\"\nEndProject\n";
             foreach (var (ProjectName, Values) in Projects)
             {
                 ProjectsDefinition += $"Project(\"{{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}}\") = \"{Values.ProjectName}\", \"{Values.ProjectFilepath}\", \"{Values.ProjectGuid}\"\nEndProject\n";
@@ -125,20 +172,20 @@ namespace Moonquake.CodeGen
                 SlnGlobalSectionBuilder Builder = new SlnGlobalSectionBuilder().Name("ProjectConfigurationPlatforms").PostSolution();
                 foreach (var (Cfg, RR) in InResolutions)
                 {
+                    string Match = $"{Cfg.Config}|{ArchStr(Cfg.Arch)}";
                     foreach (var (ProjectName, Values) in Projects)
                     {
-                        string Match = $"{Cfg.Config}|{ArchStr(Cfg.Arch)}";
                         string Heading = $"{Values.ProjectGuid}.{Match}";
                         Builder.Line($"{Heading}.ActiveCfg = {Match}");
-                        Builder.Line($"{Heading}.Build.0 = {(RR.Modules.ContainsKey(ProjectName) ? Match : "")}");
+                        //Builder.Line($"{Heading}.Build.0 = {(RR.Modules.ContainsKey(ProjectName) ? Match : "")}");
+                        Builder.Line($"{Heading}.Build.0 =");
                     }
+                    Builder.Line($"{BuilderProjectGuid}.{Match}.Build.0 = {Match}");
                 }
                 GlobalSections.Add(Builder.Build().Str());
             }
 
-            BuildRoot ExampleRoot = InResolutions.First().Value;
             string Filepath = Path.Combine(ExampleRoot.RootPath, ExampleRoot.Name + ".sln");
-
             File.WriteAllText(Filepath, $"{FileHeader}{ProjectsDefinition}GlobalSection\n{string.Join("\n", GlobalSections)}\nEndGlobal");
         }
 
@@ -169,11 +216,6 @@ namespace Moonquake.CodeGen
             MainPG.SetProperty("ConfigurationType", "Makefile"); // NMake
             MainPG.SetProperty("PlatformToolset", "v145"); // VS2026
 
-            // NMake build commands
-            MainPG.SetProperty("NMakeBuildCommandLine", "echo Building $(Configuration)|$(Platform)");
-            MainPG.SetProperty("NMakeReBuildCommandLine", "echo Rebuilding $(Configuration)|$(Platform)");
-            MainPG.SetProperty("NMakeCleanCommandLine", "echo Cleaning $(Configuration)|$(Platform)");
-
             foreach (var (Cfg, RR) in InResolutions)
             {
                 foreach (BuildModule Resolution in RR.Modules.Values)
@@ -189,6 +231,10 @@ namespace Moonquake.CodeGen
                     Group.AddProperty("TargetName", Resolution.OutputName);
                     Group.AddProperty("OutDir", Resolution.OutputPath);
                     Group.AddProperty("IntDir", Resolution.ObjectPath);
+
+                    Group.SetProperty("NMakeBuildCommandLine", "echo Invalid");
+                    Group.SetProperty("NMakeReBuildCommandLine", "echo Invalid");
+                    Group.SetProperty("NMakeCleanCommandLine", "echo Invalid");
 
                     if (Resolution.IncludePaths.Count > 0)
                     {

@@ -10,5 +10,8 @@ namespace Moonquake.DSL.Constructs
         public const string PLATFORMS = "Platforms";
         public const string MODULES   = "Modules";
         public const string ENTRYMOD  = "MainModule";
+        public const string BUILD     = "BuildCommand";
+        public const string REBUILD   = "ReBuildCommand";
+        public const string CLEAN     = "CleanCommand";
     }
 }

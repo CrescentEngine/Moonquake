@@ -176,10 +176,6 @@ namespace Moonquake.DSL
             bool bSuccess = false;
             do
             {
-                if (char.IsWhiteSpace(Cur()))
-                {
-                    throw new Exception($"Lexer.CollectString() error: String literal at line {CurrentLine} in file '{SourceFile}' contains a whitespace character after the opening and before the closing quote (if one exists.");
-                }
                 if (Cur() == '\\')
                 {
                     Index++;

@@ -1,5 +1,7 @@
 // Copyright (C) 2026 ychgen, all rights reserved.
 
+using System.Reflection;
+
 namespace Moonquake.DSL.Constructs
 {
     public class Module : Construct
@@ -46,7 +48,7 @@ namespace Moonquake.DSL.Constructs
             // IncludePaths
             NewArray(ModuleFieldNames.INCDIRS);
             // ExposedIncludePaths
-            NewArray(ModuleFieldNames.EXPINCL).Since(new LanguageVersion(1, 1, 0));
+            NewArray(ModuleFieldNames.EXPINCL).Since(1, 1, 0);
         }
 
         public override ConstructType GetConstructType() => ConstructType.Module;

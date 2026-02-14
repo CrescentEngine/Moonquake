@@ -22,6 +22,8 @@ namespace Moonquake.DSL
         public const string IF_PMATCH        = "When";    // if pattern match
         public const string IF_PNOMATCH      = "WhenNot"; // if pattern no match
         public const string IF_PANYMATCH     = "WhenAny"; // if patterns any match
+        public const string SYSCALL          = "SystemCall";
+        public const string EXECALL          = "InvokeExec";
 
         // ----------------------------------------------------------------------------------------- //
         // --------------------------------------ROOT SCOPE----------------------------------------- //

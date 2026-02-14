@@ -69,7 +69,7 @@ namespace Moonquake
             Regex Rgx = PatternCache.GetOrAdd(Pattern, p =>
             {
                 string Escaped = Regex.Escape(p);
-                string Final   = "^" + Escaped.Replace(@"\*", ".*") + "$";
+                string Final   = "^" + Escaped.Replace(@"\*", ".*?") + "$";
                 return new Regex(Final, RegexOptions.Compiled);
             });
 

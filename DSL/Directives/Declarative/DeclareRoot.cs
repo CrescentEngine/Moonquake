@@ -33,9 +33,9 @@ namespace Moonquake.DSL.Directives
             Context.PopFrame();
             
             Context.Roots[ConstructName] = Subject;
-            if (Moonquake.BuildOrder.Type == BuildType.Generate && ConstructName == Moonquake.BuildOrder.RootGenerateTarget!)
+            if (ConstructName == Moonquake.BuildOrder.RootGenerateTarget!)
             {
-                GenerateCommand.CanonicalRoot = Subject;
+                Moonquake.CanonicalRoot = Subject;
                 Context.Terminate();
             }
         }

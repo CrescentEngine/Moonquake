@@ -26,8 +26,7 @@ namespace Moonquake.Orchestra
 
         private void Build(BuildModule Module)
         {
-            Console.WriteLine("-------------------------------------------------------------------------");
-            Console.WriteLine($"(MQ) Building module '{Module.Name}'");
+            Console.WriteLine($"Building module '{Module.Name}'...");
             if (!Directory.Exists(Module.ObjectPath))
             {
                 Directory.CreateDirectory(Module.ObjectPath);
@@ -45,7 +44,7 @@ namespace Moonquake.Orchestra
                     throw new Exception($"Building of module '{Module.Name}' failed, compiler compilation error.");
                 }
             }
-            Console.WriteLine($"(MQ) Linking {(Module.OutputType == ModuleOutputType.ConsoleExecutable || Module.OutputType == ModuleOutputType.WindowedExecutable ? "executable" : "binary")}");
+            Console.WriteLine($"Linking final {(Module.OutputType == ModuleOutputType.ConsoleExecutable || Module.OutputType == ModuleOutputType.WindowedExecutable ? "executable" : "binary")}...");
             if (!Backend.Instance.InvokeLinker(ObjectFiles, Module))
             {
                 throw new Exception($"Building of module '{Module.Name}' failed, linker linkage error.");

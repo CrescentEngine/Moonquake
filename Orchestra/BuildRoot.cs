@@ -18,5 +18,9 @@ namespace Moonquake.Orchestra
 
         public Dictionary<string, BuildModule> Modules = new();
         public BuildModule? MainModule;
+
+        public string BuildCommand   = "";
+        public string ReBuildCommand = "";
+        public string CleanCommand   = "";
     }
 }

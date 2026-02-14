@@ -2,6 +2,7 @@
 
 using System.Collections.Immutable;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace Moonquake.DSL
 {
@@ -90,12 +91,38 @@ namespace Moonquake.DSL
             {
                 return;
             }
+
+            // Extremely inefficient function.
+            // TODO: Improve performance, this is just to have it work.
+
             StringBuilder Builder = new StringBuilder(Node.Literal);
+            
+            var matches = Regex.Matches(Node.Literal, @"\{Environment\.([^\}]+)\}");
+            foreach (Match match in matches)
+            {
+                string variable = match.Groups[1].Value;
+                if (!Moonquake.EnvironmentVariables.TryGetValue(variable, out var value))
+                {
+                    throw new Exception($"No such environment variable '{variable}' exists.");
+                }
+                Builder.Replace(match.Value, value);
+            }
+
+            Builder.Replace("{BuildOrder.Configuration}", Moonquake.BuildOrder.Configuration);
+            Builder.Replace("{BuildOrder.Platform}", Moonquake.BuildOrder.Platform.ToString());
+            Builder.Replace("{BuildOrder.Architecture}", Moonquake.BuildOrder.Architecture.ToString());
 
             if (Context.Frame.Construct is not null)
             {
                 switch (Context.Frame.EvalContext)
                 {
+                case EvaluationContext.RootScope:
+                {
+                    Constructs.Root Root = (Constructs.Root) Context.Frame.Construct;
+                    Builder.Replace("{Root.Name}", Root.Name);
+                    Builder.Replace("{Root.Path}", Root.Str(Constructs.RootFieldNames.ORIGIN));
+                    break;
+                }
                 case EvaluationContext.SchemaScope:
                 case EvaluationContext.ModuleScope:
                 case EvaluationContext.DeferredScope:
@@ -108,9 +135,6 @@ namespace Moonquake.DSL
                     Builder.Replace("{Root.Path}", Mod.Root.Str(Constructs.RootFieldNames.ORIGIN));
                     Builder.Replace("{Module.Name}", Mod.Name);
                     Builder.Replace("{Module.Path}", Mod.Str("Path"));
-                    Builder.Replace("{BuildOrder.Configuration}", Moonquake.BuildOrder.Configuration);
-                    Builder.Replace("{BuildOrder.Platform}", Moonquake.BuildOrder.Platform.ToString());
-                    Builder.Replace("{BuildOrder.Architecture}", Moonquake.BuildOrder.Architecture.ToString());
                     
                     break;
                 }
@@ -187,9 +211,9 @@ namespace Moonquake.DSL
                 throw new Exception($"Visitor.VisitDirective() errror: Directive '{Node.DirectiveName}()' cannot have a body.");
             }
 
-            if (Context.Frame.EvalContext == EvaluationContext.DeferredScope && !Directive.IsConditional())
+            if (Context.Frame.EvalContext == EvaluationContext.DeferredScope && !Directive.IsInvokableInDeferredScope())
             {
-                throw new Exception($"Visitor.VisitDirective() error: Directive '{Node.DirectiveName}' is not a conditional directive and therefore cannot be called in a deferred context.");
+                throw new Exception($"Visitor.VisitDirective() error: Directive '{Node.DirectiveName}' is not a directive that can called in a deferred context.");
             }
             
             if (!Directive.HasOverload(OverloadRequested))

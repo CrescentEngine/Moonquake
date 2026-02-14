@@ -48,6 +48,7 @@ namespace Moonquake.DSL.Constructs
         }
 
         public void Since(LanguageVersion Ver) => _Since = Ver;
+        public void Since(int Major, int Minor, int Patch) => Since(new LanguageVersion(Major, Minor, Patch));
 
         public bool HasFlags(ConstructFieldFlags InFlags) { return (Flags & InFlags) == InFlags; }
         public bool IsPure() => HasFlags(ConstructFieldFlags.Pure);

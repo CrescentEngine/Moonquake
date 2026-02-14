@@ -1,5 +1,8 @@
 // Copyright (C) 2026 ychgen, all rights reserved.
 
+using System.Globalization;
+using Moonquake.CodeGen;
+
 namespace Moonquake.Orchestra
 {
     /// <summary>
@@ -42,5 +45,27 @@ namespace Moonquake.Orchestra
         /// Subset of Dependencies list that encapsulates the modules to actually link against, not just depend on.
         /// </summary>
         public Dictionary<string, BuildModule> Linkages     = new();
+
+        public BuildModule()
+        {
+            switch (Moonquake.BuildOrder.Platform)
+            {
+            case Platforms.Windows:
+            {
+                Definitions.Add("DLLIMPORT=__declspec(dllimport)");
+                Definitions.Add("DLLEXPORT=__declspec(dllexport)");
+                break;
+            }
+            case Platforms.Linux:
+            {
+                Definitions.Add("DLLIMPORT");
+                Definitions.Add("DLLEXPORT=__attribute__((visibility(\"default\")))");
+                break;
+            }
+            }
+        }
+
+        public static string GetAPIMacro(string InModuleName) => $"{InModuleName.Replace(" ", "").ToUpper(CultureInfo.InvariantCulture)}_API";
+        public string GetGeneratedIntermediatesPath(TestBuildConfig Cfg) => $"{ModulePath}/Intermediate/{Cfg.Config}-{Cfg.Arch}/Include";
     }
 }
