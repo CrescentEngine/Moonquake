@@ -66,6 +66,14 @@ namespace Moonquake.Orchestra
         }
 
         public static string GetAPIMacro(string InModuleName) => $"{InModuleName.Replace(" ", "").ToUpper(CultureInfo.InvariantCulture)}_API";
+        public static int GetLanguageStandardYear(ModuleLanguageStandard Std) => Std switch
+        {
+            ModuleLanguageStandard.Cpp14 => 2014,
+            ModuleLanguageStandard.Cpp17 => 2017,
+            ModuleLanguageStandard.Cpp20 => 2020,
+            _ => throw new Exception($"Invalid LanguageStandard for C++ '{Std}'. Cannot resolve year of the standard.")
+        };
+
         public string GetGeneratedIntermediatesPath(TestBuildConfig Cfg) => $"{ModulePath}/Intermediate/{Cfg.Config}-{Cfg.Arch}/Include";
     }
 }

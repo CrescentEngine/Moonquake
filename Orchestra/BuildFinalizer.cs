@@ -233,7 +233,8 @@ namespace Moonquake.Orchestra
             }
 
             // Now some fun meta stuff
-            Final.Definitions.Add($"MQ_MODULE_NAME=\"{Final.Name}\"");
+            Final.Definitions.Add($"CC_MODULE_NAME=\"{Final.Name}\"");
+            Final.Definitions.Add($"CC_LANGUAGE_STANDARD={BuildModule.GetLanguageStandardYear(Final.CppStandard)}");
             // If building a DLL module, specify we should export stuff.
             Final.Definitions.Add($"{BuildModule.GetAPIMacro(Final.Name)}={(Final.OutputType == ModuleOutputType.DynamicLibrary ? "DLLEXPORT" : "")}");
             foreach (var (Name, Dependency) in Final.Dependencies)
