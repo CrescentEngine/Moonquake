@@ -59,7 +59,7 @@ namespace Moonquake.Toolchain
             {
                 return false;
             }
-            
+
             List<string> Arguments =
             [
                 "/nologo",

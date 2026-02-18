@@ -64,7 +64,7 @@ namespace Moonquake.CodeGen
 
         public SlnGlobalSectionBuilder PostSolution()
         {
-            _evalt = SlnGlobalSectionEvalTime.PreSolution;
+            _evalt = SlnGlobalSectionEvalTime.PostSolution;
             return this;
         }
 

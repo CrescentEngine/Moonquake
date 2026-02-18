@@ -1,6 +1,7 @@
 // Copyright (C) 2026 ychgen, all rights reserved.
 
 using Moonquake.DSL.Constructs;
+using Moonquake.Toolchain;
 
 namespace Moonquake.Orchestra
 {
@@ -240,6 +241,11 @@ namespace Moonquake.Orchestra
             foreach (var (Name, Dependency) in Final.Dependencies)
             {
                 Final.Definitions.Add($"{BuildModule.GetAPIMacro(Name)}={(Dependency.OutputType == ModuleOutputType.DynamicLibrary ? "DLLIMPORT" : "")}");
+            }
+
+            if (Backend.Instance is VCBackend)
+            {
+                Final.Definitions.Add($"CC_COMPILER_MSVC=1");
             }
 
             Directory.SetCurrentDirectory(PrevWorkingDir);
