@@ -190,7 +190,7 @@ namespace Moonquake.Toolchain
                     // we link against .lib of DLL, we cannot link against a .dll
                     // .lib covers the loading of the .dll
                     // for static libs it's already .lib
-                    Linkages.Add(Path.Combine(Linkage.OutputPath, Path.Combine(Linkage.OutputName) + ".lib"));
+                    Linkages.Add(Path.Combine(Linkage.OutputPath, Linkage.OutputName + ".lib"));
                 }
 
                 List<string> Arguments = ["/nologo", .. ObjectFiles, .. Module.Libraries, .. Linkages, $"/OUT:{FinalBin}", InSpecificFlag];
